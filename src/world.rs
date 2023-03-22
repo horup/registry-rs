@@ -1,7 +1,7 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Resource, ResourceId};
+use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Resource, ResourceId, ResourceStorage};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
 const MAX_RESOURCES:usize = (2 as u32).pow((size_of::<ResourceId>() * 8) as u32) as usize;
@@ -9,12 +9,14 @@ const MAX_RESOURCES:usize = (2 as u32).pow((size_of::<ResourceId>() * 8) as u32)
 #[derive(Serialize, Deserialize)]
 struct SerializableWorld {
     entities:SlotMap<Id, ()>,
-    serialized_components:HashMap<ComponentId, Vec<u8>>
+    serialized_components:HashMap<ComponentId, Vec<u8>>,
+    serialized_resources:HashMap<ResourceId, Vec<u8>>
 }
 
 pub struct World {
     entities:SlotMap<Id, ()>,
-    components:[Option<ComponentStorage>;MAX_COMPONENTS]
+    components:[Option<ComponentStorage>;MAX_COMPONENTS],
+    resources:[Option<ResourceStorage>;MAX_RESOURCES]
 }
 
 pub struct Entities<'a> {
@@ -44,9 +46,16 @@ impl World {
                 elem.write(None);
             }
             let components = transmute::<_, [Option<ComponentStorage>;MAX_COMPONENTS]>(data);
+
+            let mut data:[MaybeUninit<Option<ResourceStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
+            for elem in &mut data[..] {
+                elem.write(None);
+            }
+            let resources = transmute::<_, [Option<ResourceStorage>;MAX_COMPONENTS]>(data);
             Self {
                 entities,
-                components
+                components,
+                resources
             }
         }
     }
@@ -178,9 +187,21 @@ impl World {
                 }
             }
         }
+        let mut serialized_resources =HashMap::new();
+        for index in 0..MAX_COMPONENTS {
+            let id = index as ResourceId;
+            if let Some(Some(storage)) = self.resources.get(index) {
+                let mut bytes = Vec::new();
+                unsafe {
+                    storage.serialize(&mut bytes);
+                    serialized_resources.insert(id, bytes);
+                }
+            }
+        }
         let w = SerializableWorld {
             entities:self.entities.clone(),
-            serialized_components
+            serialized_components,
+            serialized_resources
         };
 
         let writer = BufWriter::new(bytes);
@@ -198,6 +219,14 @@ impl World {
                 }
             }
         }
+        for (id, bytes) in w.serialized_resources.iter() {
+            let index = *id as usize;
+            if let Some(Some(storage)) = self.resources.get_mut(index) {
+                unsafe {
+                    storage.deserialize(bytes);
+                }
+            }
+        }
     }
 
     pub fn clear(&mut self) {
@@ -207,11 +236,16 @@ impl World {
                 storage.clear();
             }
         }
+        for storage in self.resources.iter_mut() {
+            if let Some(storage) = storage {
+                storage.clear();
+            }
+        }
     }
 }
 
 impl Clone for World {
     fn clone(&self) -> Self {
-        Self { entities: self.entities.clone(), components: self.components.clone() }
+        Self { entities: self.entities.clone(), components: self.components.clone(), resources: self.resources.clone() }
     }
 }

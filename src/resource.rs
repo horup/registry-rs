@@ -1,6 +1,6 @@
 use serde::{Serialize, de::DeserializeOwned};
 
 pub type ResourceId = u8;
-pub trait Resource : Clone + Serialize + DeserializeOwned + 'static {
+pub trait Resource : Clone + Serialize + DeserializeOwned + 'static + Default {
     fn id() -> ResourceId;
 }

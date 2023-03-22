@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
@@ -9,12 +10,13 @@ pub struct ResourceStorage {
     pub drop_fn:Box<dyn Fn() -> ()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
-    pub clone_fn:Box<dyn Fn()->Self>
+    pub clone_fn:Box<dyn Fn()->Self>,
+    pub clear_fn:Box<dyn Fn()>,
 }
 
 impl ResourceStorage {
-    pub fn new<T:Resource>(resource:T) -> Self {
-        let resource = RefCell::new(resource);
+    pub fn new<T:Resource>() -> Self {
+        let resource = RefCell::new(T::default());
         let boxed = Box::new(resource);
         let ptr = Box::into_raw(boxed);
         let f = move || {
@@ -37,7 +39,15 @@ impl ResourceStorage {
         let clone_fn = move || {
             unsafe {
                 let org = ptr.as_ref().unwrap();
-                return Self::new::<T>(org.borrow().clone());
+                let mut new = Self::new::<T>();
+                *new.get_mut().unwrap() = org.clone();
+                return new;
+            }
+        };
+        let clear_fn = move || {
+            unsafe {
+                let ref_cell = ptr.as_mut().unwrap().borrow_mut();
+                ref_cell.replace(T::default());
             }
         };
         let ptr = ptr as *mut ();
@@ -46,7 +56,8 @@ impl ResourceStorage {
             drop_fn:Box::new(f),
             serialize_fn:Box::new(serialize_fn),
             deserialize_fn:Box::new(deserialize_fn),
-            clone_fn:Box::new(clone_fn)
+            clone_fn:Box::new(clone_fn),
+            clear_fn:Box::new(clear_fn)
         }      
     }
     
@@ -73,6 +84,10 @@ impl ResourceStorage {
             return None;
         }
     }  
+
+    pub fn clear(&mut self) {
+        self.clear_fn.as_mut()();
+    }
 
     pub unsafe fn deserialize(&mut self, bytes:&Vec<u8>) {
         self.deserialize_fn.as_mut()(bytes);
