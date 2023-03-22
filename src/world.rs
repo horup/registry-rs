@@ -1,7 +1,7 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, Storage, ComponentId, EntityMut, Entity};
+use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
 
@@ -13,7 +13,7 @@ struct SerializableWorld {
 
 pub struct World {
     entities:SlotMap<Id, ()>,
-    components:[Option<Storage>;MAX_COMPONENTS]
+    components:[Option<ComponentStorage>;MAX_COMPONENTS]
 }
 
 pub struct Entities<'a> {
@@ -38,11 +38,11 @@ impl World {
         unsafe {
             let entities = SlotMap::default();
             
-            let mut data:[MaybeUninit<Option<Storage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
+            let mut data:[MaybeUninit<Option<ComponentStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
             for elem in &mut data[..] {
                 elem.write(None);
             }
-            let components = transmute::<_, [Option<Storage>;MAX_COMPONENTS]>(data);
+            let components = transmute::<_, [Option<ComponentStorage>;MAX_COMPONENTS]>(data);
             Self {
                 entities,
                 components
@@ -73,15 +73,15 @@ impl World {
         if self.components[i].is_some() {
             panic!("component type already registered!");
         }
-        self.components[i] = Some(Storage::new::<T>());
+        self.components[i] = Some(ComponentStorage::new::<T>());
     }
 
-    unsafe fn storage_mut<T:Component>(&mut self) -> &mut Storage {
+    unsafe fn storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
         let i = T::id() as usize;
         return self.components.get_unchecked_mut(i).as_mut().expect("component type not registered!");
     }
 
-    unsafe fn storage<T:Component>(&self) -> &Storage {
+    unsafe fn storage<T:Component>(&self) -> &ComponentStorage {
         let i = T::id() as usize;
         return self.components.get_unchecked(i).as_ref().expect("component type not registered!");
     }

@@ -1,9 +1,9 @@
 use std::{time::Instant, cell::RefCell, collections::HashMap};
 
 use serde::{Serialize, Deserialize};
-mod storage;
+mod component_storage;
 use slotmap::{SecondaryMap, SlotMap};
-pub use storage::*;
+pub use component_storage::*;
 mod component;
 pub use component::*;
 mod id;
@@ -54,7 +54,6 @@ impl Component for Monster {
         4
     }
 }
-
 
 fn measure<F:FnMut()->()>(name:&str, mut f:F) {
     let now = Instant::now();

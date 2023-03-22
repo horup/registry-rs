@@ -4,7 +4,7 @@ use slotmap::SecondaryMap;
 use crate::Id;
 use crate::Component;
 
-pub struct Storage {
+pub struct ComponentStorage {
     pub ptr:*mut (),
     pub drop_fn:Box<dyn Fn() -> ()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
@@ -14,7 +14,7 @@ pub struct Storage {
     pub clone_fn:Box<dyn Fn()->Self>
 }
 
-impl Storage {
+impl ComponentStorage {
     pub fn new<T:Component>() -> Self {
         let map:SecondaryMap<Id, RefCell<T>> = SecondaryMap::new();
         let boxed = Box::new(map);
@@ -99,13 +99,13 @@ impl Storage {
     }
 }
 
-impl Drop for Storage {
+impl Drop for ComponentStorage {
     fn drop(&mut self) {
         self.drop_fn.as_mut()();
     }
 }
 
-impl Clone for Storage {
+impl Clone for ComponentStorage {
     fn clone(&self) -> Self {
         self.clone_fn.as_ref()()
     }
