@@ -126,6 +126,11 @@ impl World {
         for index in 0..MAX_COMPONENTS {
             let id = index as ComponentId;
             if let Some(Some(storage)) = self.components.get(index) {
+                let mut bytes = Vec::new();
+                unsafe {
+                    storage.serialize(&mut bytes);
+                    serialized_components.insert(id, bytes);
+                }
             }
         }
         let w = SerializableWorld {
@@ -140,6 +145,14 @@ impl World {
     pub fn deserialize(&mut self, bytes:&[u8]) {
         let w:SerializableWorld = bincode::deserialize(&bytes).expect("failed to deserialize World");
         self.entities = w.entities;
+        for (id, bytes) in w.serialized_components.iter() {
+            let index = *id as usize;
+            if let Some(Some(storage)) = self.components.get_mut(index) {
+                unsafe {
+                    storage.deserialize(bytes);
+                }
+            }
+        }
     }
 
     pub fn clear(&mut self) {
