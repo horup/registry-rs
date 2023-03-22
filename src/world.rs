@@ -1,8 +1,15 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute}, path::Components};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute}, path::Components, collections::HashMap, io::BufWriter};
+use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, Id, Storage, ComponentId};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
+
+#[derive(Serialize, Deserialize)]
+struct SerializableWorld {
+    entities:SlotMap<Id, ()>,
+    serialized_components:HashMap<ComponentId, Vec<u8>>
+}
 
 pub struct World {
     entities:SlotMap<Id, ()>,
@@ -113,5 +120,26 @@ impl World {
                 }
             }
         }
+    }
+
+    pub fn serialize(&self, bytes:&mut Vec<u8>) {
+        let mut serialized_components =HashMap::new();
+        for index in 0..MAX_COMPONENTS {
+            let id = index as ComponentId;
+            if let Some(Some(storage)) = self.components.get(index) {
+            }
+        }
+        let w = SerializableWorld {
+            entities:self.entities.clone(),
+            serialized_components
+        };
+
+        let writer = BufWriter::new(bytes);
+        bincode::serialize_into(writer, &w).expect("failed to serialize World");
+    }
+
+    pub fn deserialize(&mut self, bytes:&[u8]) {
+        let w:SerializableWorld = bincode::deserialize(&bytes).expect("failed to deserialize World");
+        self.entities = w.entities;
     }
 }
