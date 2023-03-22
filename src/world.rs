@@ -13,7 +13,7 @@ struct SerializableWorld {
 
 pub struct World {
     entities:SlotMap<Id, ()>,
-    components:[Option<Storage>;MAX_COMPONENTS]//[OptionVec<Option<Storage>>//FxHashMap<u16, Storage>
+    components:[Option<Storage>;MAX_COMPONENTS]
 }
 
 impl World {

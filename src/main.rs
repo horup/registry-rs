@@ -65,7 +65,7 @@ fn measure<F:FnMut()->()>(name:&str, mut f:F) {
 
 fn main() {
     let size = 1000000;
-    {
+    loop {
         let mut world = World::new();
         world.register::<Health>();
         world.register::<Position>();
