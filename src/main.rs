@@ -67,7 +67,7 @@ fn measure<F:FnMut()->()>(name:&str, mut f:F) {
 
 fn main() {
     let size = 1000000;
-    loop {
+    {
         let mut world = World::new();
         world.register::<Health>();
         world.register::<Position>();
@@ -75,15 +75,15 @@ fn main() {
         world.register::<Monster>();
         measure("World: creating 1 million monsters", || {
             for i in 0..size {
-                let e = world.spawn();
-                world.attach(e, Health {
+                let mut e = world.spawn();
+                e.attach(Health {
                     amount:100.0
                 });
-                world.attach(e, Position {
+                e.attach(Position {
                     x:i as f32,
                     y:i as f32
                 });
-                world.attach(e, Monster {
+                e.attach(Monster {
                 });
             }
         });
@@ -110,10 +110,6 @@ fn main() {
         
         measure("World: clone", || {
             let mut world2 = world.clone();
-            let e = world2.spawn();
-            world2.attach(e, Player {
-
-            });
         });
     }
 /*

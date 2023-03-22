@@ -1,7 +1,7 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, Storage, ComponentId};
+use crate::{Component, Id, Storage, ComponentId, EntityMut, Entity};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
 
@@ -35,6 +35,20 @@ impl World {
 
     pub fn entities(&self) -> Keys<Id, ()> {
         self.entities.keys()
+    }
+
+    pub fn entity(&self, id:Id) -> Option<Entity> {
+        if self.entities.get(id).is_some() {
+            return Some(Entity::new(id, self));
+        }
+        None
+    } 
+
+    pub fn entity_mut(&mut self, id:Id) -> Option<EntityMut> {
+        if self.entities.get(id).is_some() {
+            return Some(EntityMut::new(id, self));
+        }
+        None
     }
 
     pub fn register<T:Component>(&mut self) {
@@ -108,8 +122,9 @@ impl World {
         }
     }
 
-    pub fn spawn(&mut self) -> Id {
-        self.entities.insert(())
+    pub fn spawn(&mut self) -> EntityMut {
+        let id = self.entities.insert(());
+        return EntityMut::new(id, self);
     }
 
     pub fn despawn(&mut self, id:Id) {
