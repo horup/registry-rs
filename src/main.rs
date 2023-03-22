@@ -95,6 +95,26 @@ fn main() {
 
     {
         let mut entities:SlotMap<Id,()> = SlotMap::default();
+        let mut positions:SecondaryMap<Id, Position> = SecondaryMap::default();  
+
+        for i in 0..size {
+            let id = entities.insert(());
+            positions.insert(id, Position {
+                x: i as f32,
+                y: i as f32,
+            });
+        }
+
+        measure("Slotmap: moving 1 million monsters", || {
+            for e in entities.keys() {
+                let mut pos = positions.get_mut(e).unwrap();
+                pos.x += 1.0;
+            }
+        });
+    }
+
+    {
+        let mut entities:SlotMap<Id,()> = SlotMap::default();
         let mut positions:SecondaryMap<Id, RefCell<Position>> = SecondaryMap::default();  
 
         for i in 0..size {
@@ -111,24 +131,26 @@ fn main() {
                 pos.x += 1.0;
             }
         });
+
+        measure("Slotmap Refcell: moving 1 million monsters using positions iter", || {
+            for (id, mut pos) in positions.iter_mut() {
+                pos.borrow_mut().x += 1.0;
+            }
+        });
     }
 
     {
-        let mut entities:SlotMap<Id,()> = SlotMap::default();
-        let mut positions:SecondaryMap<Id, Position> = SecondaryMap::default();  
-
+        let mut vec = Vec::new();
         for i in 0..size {
-            let id = entities.insert(());
-            positions.insert(id, Position {
+            vec.push(RefCell::new(Position {
                 x: i as f32,
                 y: i as f32,
-            });
+            }));
         }
 
-        measure("Slotmap: moving 1 million monsters", || {
-            for e in entities.keys() {
-                let mut pos = positions.get_mut(e).unwrap();
-                pos.x += 1.0;
+        measure("Vec moving 1 million monsters", || {
+            for pos in vec.iter_mut() {
+                pos.borrow_mut().x += 1.0;
             }
         });
     }
