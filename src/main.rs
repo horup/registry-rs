@@ -10,6 +10,8 @@ mod id;
 pub use id::*;
 mod world;
 pub use world::*;
+mod entity;
+pub use entity::*;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
