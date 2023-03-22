@@ -55,7 +55,6 @@ impl Storage {
         }
     }
 
-
     pub unsafe fn get<T>(&self) -> &SecondaryMap<Id, RefCell<T>> {
         let ptr = self.ptr as *const SecondaryMap<Id, RefCell<T>>;
         unsafe {

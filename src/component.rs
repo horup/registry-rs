@@ -1,5 +1,7 @@
 use serde::{Serialize, de::DeserializeOwned};
 
+pub type ComponentId = u8;
+
 pub trait Component : Serialize + DeserializeOwned + 'static {
-    fn id() -> u16;
+    fn id() -> ComponentId;
 }
