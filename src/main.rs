@@ -88,8 +88,8 @@ fn main() {
             }
         });
         measure("World: moving 1 million monsters", || {
-            for e in world.entities() {
-                let mut pos = world.get_mut::<Position>(e).unwrap();
+            for mut e in world.entities() {
+                let mut pos = e.get_mut::<Position>().unwrap();
                 pos.x += 1.0;
             }
         });

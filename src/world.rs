@@ -16,6 +16,23 @@ pub struct World {
     components:[Option<Storage>;MAX_COMPONENTS]
 }
 
+pub struct Entities<'a> {
+    world:&'a World,
+    keys:Keys<'a, Id, ()>
+}
+
+impl<'a> Iterator for Entities<'a> {
+    type Item = Entity<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(id) = self.keys.next() {
+            return Some(Entity::new(id, self.world));
+        }
+
+        None
+    }
+}
+
 impl World {
     pub fn new() -> Self {
         unsafe {
@@ -33,8 +50,8 @@ impl World {
         }
     }
 
-    pub fn entities(&self) -> Keys<Id, ()> {
-        self.entities.keys()
+    pub fn entities(&self) -> Entities {
+        Entities { world: self, keys: self.entities.keys() }
     }
 
     pub fn entity(&self, id:Id) -> Option<Entity> {
