@@ -53,8 +53,87 @@ impl Component for Monster {
     }
 }
 
+
+fn measure<F:FnMut()->()>(name:&str, mut f:F) {
+    let now = Instant::now();
+    f();
+    let elapsed = Instant::now() - now;
+    println!("{}", name,);
+    println!("{}ms", elapsed.as_millis());
+    println!("");
+}
+
 fn main() {
-    let mut world = World::new();
+    let size = 1000000;
+    {
+        let mut world = World::new();
+        world.register::<Health>();
+        world.register::<Position>();
+        world.register::<Player>();
+        world.register::<Monster>();
+        measure("World: creating 1 million monsters", || {
+            for i in 0..size {
+                let e = world.spawn();
+                world.attach(e, Health {
+                    amount:100.0
+                });
+                world.attach(e, Position {
+                    x:i as f32,
+                    y:i as f32
+                });
+                world.attach(e, Monster {
+                });
+            }
+        });
+        measure("World: moving 1 million monsters", || {
+            for e in world.entities() {
+                let mut pos = world.get_mut::<Position>(e).unwrap();
+                pos.x += 1.0;
+            }
+        });
+    }
+
+    {
+        let mut entities:SlotMap<Id,()> = SlotMap::default();
+        let mut positions:SecondaryMap<Id, RefCell<Position>> = SecondaryMap::default();  
+
+        for i in 0..size {
+            let id = entities.insert(());
+            positions.insert(id, RefCell::new(Position {
+                x: i as f32,
+                y: i as f32,
+            }));
+        }
+
+        measure("Slotmap Refcell: moving 1 million monsters", || {
+            for e in entities.keys() {
+                let mut pos = positions.get(e).unwrap().borrow_mut();
+                pos.x += 1.0;
+            }
+        });
+    }
+
+    {
+        let mut entities:SlotMap<Id,()> = SlotMap::default();
+        let mut positions:SecondaryMap<Id, Position> = SecondaryMap::default();  
+
+        for i in 0..size {
+            let id = entities.insert(());
+            positions.insert(id, Position {
+                x: i as f32,
+                y: i as f32,
+            });
+        }
+
+        measure("Slotmap: moving 1 million monsters", || {
+            for e in entities.keys() {
+                let mut pos = positions.get_mut(e).unwrap();
+                pos.x += 1.0;
+            }
+        });
+    }
+    
+    /*let mut world = World::new();
     world.register::<Health>();
     world.register::<Position>();
     world.register::<Player>();
@@ -118,7 +197,5 @@ fn main() {
     }
 
     let took = Instant::now() - now;
-    dbg!(took.as_millis());
-
-
+    dbg!(took.as_millis());*/
 }
