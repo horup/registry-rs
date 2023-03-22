@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::io::BufWriter;
-use std::io::Write;
 use slotmap::SecondaryMap;
 use crate::Id;
 use crate::Component;
@@ -11,7 +10,8 @@ pub struct Storage {
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
     pub remove_fn:Box<dyn Fn(Id)>,
-    pub clear_fn:Box<dyn Fn()>
+    pub clear_fn:Box<dyn Fn()>,
+    pub clone_fn:Box<dyn Fn()->Self>
 }
 
 impl Storage {
@@ -46,6 +46,16 @@ impl Storage {
                 ptr.as_mut().unwrap().clear();
             }
         };
+        let clone_fn = move || {
+            let mut new = Self::new::<T>();
+            unsafe {
+                let org = ptr.as_ref().unwrap();
+                let new = new.get_mut::<T>();
+                *new = org.clone();
+            }
+
+            return new;
+        };
         let ptr = ptr as *mut ();
         Self {
             ptr,
@@ -53,7 +63,8 @@ impl Storage {
             serialize_fn:Box::new(serialize_fn),
             deserialize_fn:Box::new(deserialize_fn),
             remove_fn:Box::new(remove_fn),
-            clear_fn:Box::new(clear_fn)
+            clear_fn:Box::new(clear_fn),
+            clone_fn:Box::new(clone_fn)
         }      
     }
     
@@ -91,5 +102,11 @@ impl Storage {
 impl Drop for Storage {
     fn drop(&mut self) {
         self.drop_fn.as_mut()();
+    }
+}
+
+impl Clone for Storage {
+    fn clone(&self) -> Self {
+        self.clone_fn.as_ref()()
     }
 }

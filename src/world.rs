@@ -164,3 +164,9 @@ impl World {
         }
     }
 }
+
+impl Clone for World {
+    fn clone(&self) -> Self {
+        Self { entities: self.entities.clone(), components: self.components.clone() }
+    }
+}

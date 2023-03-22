@@ -11,7 +11,7 @@ pub use id::*;
 mod world;
 pub use world::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
     pub amount:f32
 }
@@ -21,7 +21,7 @@ impl Component for Health {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize)]
 struct Position {
     pub x:f32,
     pub y:f32
@@ -32,7 +32,7 @@ impl Component for Position {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize)]
 struct Player {
 
 }
@@ -43,7 +43,7 @@ impl Component for Player {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Monster {
 }
 
@@ -104,6 +104,14 @@ fn main() {
 
         measure("World: de-serialize 1 million monsters", || {
             world.deserialize(&bytes);
+        });
+        
+        measure("World: clone", || {
+            let mut world2 = world.clone();
+            let e = world2.spawn();
+            world2.attach(e, Player {
+
+            });
         });
     }
 /*
