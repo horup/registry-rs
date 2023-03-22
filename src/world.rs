@@ -1,9 +1,10 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity};
+use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Resource, ResourceId};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
+const MAX_RESOURCES:usize = (2 as u32).pow((size_of::<ResourceId>() * 8) as u32) as usize;
 
 #[derive(Serialize, Deserialize)]
 struct SerializableWorld {
@@ -48,6 +49,18 @@ impl World {
                 components
             }
         }
+    }
+
+    pub fn insert<T:Resource>(&mut self, resource:T) {
+
+    }
+
+    pub fn resource<T:Resource>(&self) {
+
+    }
+
+    pub fn resource_mut<T:Resource>() {
+
     }
 
     pub fn entities(&self) -> Entities {

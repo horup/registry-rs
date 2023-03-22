@@ -12,6 +12,10 @@ mod world;
 pub use world::*;
 mod entity;
 pub use entity::*;
+mod resource;
+pub use resource::*;
+pub mod resource_storage;
+pub use resource_storage::*;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
@@ -47,6 +51,10 @@ impl Component for Player {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Monster {
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct Global {
 }
 
 impl Component for Monster {
