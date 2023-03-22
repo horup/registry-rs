@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::io::BufWriter;
+use std::io::Write;
 use slotmap::SecondaryMap;
 use crate::Id;
 use crate::Component;
@@ -6,9 +8,10 @@ use crate::Component;
 pub struct Storage {
     pub ptr:*mut (),
     pub drop_fn:Box<dyn Fn() -> ()>,
-    pub serialize_fn:Box<dyn Fn()->Vec<u8>>,
-    pub deserialize_fn:Box<dyn Fn(&Vec<u8>)>,
-    pub remove_fn:Box<dyn Fn(Id)>
+    pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
+    pub deserialize_fn:Box<dyn Fn(&[u8])>,
+    pub remove_fn:Box<dyn Fn(Id)>,
+    pub clear_fn:Box<dyn Fn()>
 }
 
 impl Storage {
@@ -21,21 +24,26 @@ impl Storage {
                 let _ = Box::from_raw(ptr);
             }
         };
-        let serialize_fn = move || {
+        let serialize_fn = move |bytes:&mut Vec<u8>| {
             unsafe {
                 let map = ptr.as_ref().unwrap();
-                let bytes = bincode::serialize(map).unwrap();
-                return bytes;
+                let writer = BufWriter::new(bytes);
+                bincode::serialize_into(writer, map).expect("failed to serialize");
             }
         };
-        let deserialize_fn = move |bytes:&Vec<u8>| {
+        let deserialize_fn = move |bytes:&[u8]| {
             unsafe {
-                *ptr.as_mut().unwrap() = bincode::deserialize(&bytes).unwrap();
+                *ptr.as_mut().unwrap() = bincode::deserialize(bytes).unwrap();
             }
         };
         let remove_fn = move |id:Id| {
             unsafe {
                 ptr.as_mut().unwrap().remove(id);
+            }
+        };
+        let clear_fn = move || {
+            unsafe {
+                ptr.as_mut().unwrap().clear();
             }
         };
         let ptr = ptr as *mut ();
@@ -44,7 +52,8 @@ impl Storage {
             drop_fn:Box::new(f),
             serialize_fn:Box::new(serialize_fn),
             deserialize_fn:Box::new(deserialize_fn),
-            remove_fn:Box::new(remove_fn)
+            remove_fn:Box::new(remove_fn),
+            clear_fn:Box::new(clear_fn)
         }      
     }
     
@@ -70,8 +79,12 @@ impl Storage {
         self.deserialize_fn.as_mut()(bytes);
     }
 
-    pub unsafe fn serialize(&self) -> Vec<u8> {
-        self.serialize_fn.as_ref()()
+    pub unsafe fn serialize(&self, bytes:&mut Vec<u8>) {
+        self.serialize_fn.as_ref()(bytes);
+    }
+
+    pub fn clear(&mut self) {
+        self.clear_fn.as_mut()();
     }
 }
 

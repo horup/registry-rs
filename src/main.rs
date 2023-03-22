@@ -92,11 +92,18 @@ fn main() {
             }
         });
 
-        let mut buffer:Vec<u8> = Vec::new();
+        let mut bytes = Vec::new();
+
         measure("World: serialize 1 million monsters", || {
+            world.serialize(&mut bytes);
+        });
+
+        measure("World: clearing all entnties and components", || {
+            world.clear();
         });
 
         measure("World: de-serialize 1 million monsters", || {
+            world.deserialize(&bytes);
         });
     }
 /*

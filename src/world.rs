@@ -1,4 +1,4 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute}, path::Components, collections::HashMap, io::BufWriter};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, Id, Storage, ComponentId};
@@ -113,11 +113,10 @@ impl World {
     }
 
     pub fn despawn(&mut self, id:Id) {
-        if self.entities.remove(id).is_some() {
-            for storage in self.components.iter_mut() {
-                if let Some(storage) = storage {
-                    storage.remove(id);
-                }
+        self.entities.remove(id);
+        for storage in self.components.iter_mut() {
+            if let Some(storage) = storage {
+                storage.remove(id);
             }
         }
     }
@@ -141,5 +140,14 @@ impl World {
     pub fn deserialize(&mut self, bytes:&[u8]) {
         let w:SerializableWorld = bincode::deserialize(&bytes).expect("failed to deserialize World");
         self.entities = w.entities;
+    }
+
+    pub fn clear(&mut self) {
+        self.entities.clear();
+        for storage in self.components.iter_mut() {
+            if let Some(storage) = storage {
+                storage.clear();
+            }
+        }
     }
 }
