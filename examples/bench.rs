@@ -64,13 +64,13 @@ fn measure<F:FnMut()>(name:&str, mut f:F) {
     println!("{}ms\t {}", elapsed.as_millis(), name);
 }
 
-struct MonsterView<'a> {
+struct MonsterQuery<'a> {
     pub position:RefMut<'a, Position>,
     pub monster:RefMut<'a, Monster>
 }
 
-impl<'a> Query<'a> for MonsterView<'a> {
-    fn from_world(world:&'a World, id:EntityId) -> Option<Self> {
+impl<'a> Query<'a> for MonsterQuery<'a> {
+    fn query(world:&'a World, id:EntityId) -> Option<Self> {
         let position = world.get_mut::<Position>(id)?;
         let monster = world.get_mut::<Monster>(id)?;
         Some(Self {
@@ -124,8 +124,8 @@ fn main() {
                 pos.x += 1.0;
             }
         });
-        measure("World: moving 1 million monsters using MonsterView", || {
-            for mut monster in world.query::<MonsterView>() {
+        measure("World: moving 1 million monsters using MonsterQuery", || {
+            for mut monster in world.query::<MonsterQuery>() {
                 monster.position.x += 1.0;
             }
         });

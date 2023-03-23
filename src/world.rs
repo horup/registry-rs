@@ -47,7 +47,7 @@ impl<'a, T> Iterator for QueryIter<'a, T> where T:Sized + Query<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(id) = self.keys.next() {
-            if let Some(entity_view) = T::from_world(self.world, id) {
+            if let Some(entity_view) = T::query(self.world, id) {
                 return Some(entity_view);
             }
         }
