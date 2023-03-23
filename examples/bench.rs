@@ -61,9 +61,7 @@ fn measure<F:FnMut()->()>(name:&str, mut f:F) {
     let now = Instant::now();
     f();
     let elapsed = Instant::now() - now;
-    println!("{}", name,);
-    println!("{}ms", elapsed.as_millis());
-    println!("");
+    println!("{}ms\t {}", elapsed.as_millis(), name);
 }
 
 fn main() {
@@ -114,7 +112,6 @@ fn main() {
         
         measure("World: clone", || {
             let mut world2 = world.clone();
-            dbg!(world2.singleton_mut::<Global>().unwrap());
         });
     }
 }

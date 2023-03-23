@@ -236,7 +236,6 @@ impl World {
             let index = *id as usize;
             if let Some(Some(storage)) = self.singletons.get_mut(index) {
                 unsafe {
-                    dbg!(bytes);
                     storage.deserialize(bytes);
                 }
             }
