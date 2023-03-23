@@ -79,19 +79,6 @@ impl<'a> Query<'a> for MonsterQuery<'a> {
         })
     }
 }
-/* 
-impl<'a> EntityView for MonsterView<'a> {
-    fn from_world(world:&'a World, id:EntityId) -> Option<Self> {
-        let mut e = world.entity(id)?;
-        let position = e.get_mut::<Position>()?;
-        let monster = e.get_mut::<Monster>()?;
-        Some(Self {
-            id,
-            position,
-            monster,
-        })
-    }
-}*/
 
 fn main() {
     let size = 1000000;
@@ -151,7 +138,6 @@ fn main() {
             });
             let id = e.id();
             let _e = world.entity(id).unwrap();
-            //let mut player = e.get_mut::<Player>().unwrap();
             let _world2 = world.clone();
         });
     }
