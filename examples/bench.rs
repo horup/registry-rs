@@ -111,7 +111,7 @@ fn main() {
         });
         
         measure("World: clone", || {
-            let mut world2 = world.clone();
+            let _world2 = world.clone();
         });
     }
 }

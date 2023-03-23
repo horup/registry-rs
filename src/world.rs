@@ -1,4 +1,4 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter, borrow::Borrow};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute}, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage};
