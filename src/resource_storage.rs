@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::borrow::BorrowMut;
 use std::cell::Ref;
 use std::cell::RefCell;
@@ -6,6 +7,7 @@ use std::io::BufWriter;
 use crate::Resource;
 
 pub struct ResourceStorage {
+    pub type_id:TypeId,
     pub ptr:*mut (),
     pub drop_fn:Box<dyn Fn() -> ()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
@@ -38,10 +40,15 @@ impl ResourceStorage {
         };
         let clone_fn = move || {
             unsafe {
-                let org = ptr.as_ref().unwrap();
-                let mut new = Self::new::<T>();
-                *new.get_mut().unwrap() = org.clone();
-                return new;
+                let org = ptr.as_ref().unwrap().borrow();
+                let org = org.clone();
+                let storage = Self::new::<T>();
+                {
+                    let mut new = storage.get_mut::<T>().unwrap();
+                    *new = org;
+                }
+               
+                return storage;
             }
         };
         let clear_fn = move || {
@@ -52,6 +59,7 @@ impl ResourceStorage {
         };
         let ptr = ptr as *mut ();
         Self {
+            type_id:TypeId::of::<T>(),
             ptr,
             drop_fn:Box::new(f),
             serialize_fn:Box::new(serialize_fn),
@@ -61,7 +69,7 @@ impl ResourceStorage {
         }      
     }
     
-    pub unsafe fn get<T>(&mut self) -> Option<Ref<T>> {
+    pub unsafe fn get<T>(&self) -> Option<Ref<T>> {
         let ptr = self.ptr as *mut RefCell<T>;
         unsafe {
             let cell = ptr.as_ref().unwrap().try_borrow();

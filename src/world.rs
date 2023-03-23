@@ -1,4 +1,4 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter, borrow::Borrow};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Resource, ResourceId, ResourceStorage};
@@ -60,16 +60,24 @@ impl World {
         }
     }
 
-    pub fn insert<T:Resource>(&mut self, resource:T) {
-
+    pub fn register_resource<T:Resource>(&mut self) {
+        let i = T::id() as usize;
+        if self.resources[i].is_some() {
+            panic!("resource type already registered!");
+        }
+        self.resources[i] = Some(ResourceStorage::new::<T>());
     }
 
-    pub fn resource<T:Resource>(&self) {
-
+    pub fn resource<T:Resource>(&self) -> Option<Ref<T>> {
+        unsafe {
+            self.resource_storage::<T>().get::<T>()
+        }
     }
 
-    pub fn resource_mut<T:Resource>() {
-
+    pub fn resource_mut<T:Resource>(&self) -> Option<RefMut<T>> {
+        unsafe {
+            self.resource_storage::<T>().get_mut::<T>()
+        }
     }
 
     pub fn entities(&self) -> Entities {
@@ -90,7 +98,7 @@ impl World {
         None
     }
 
-    pub fn register<T:Component>(&mut self) {
+    pub fn register_component<T:Component>(&mut self) {
         let i = T::id() as usize;
         if self.components[i].is_some() {
             panic!("component type already registered!");
@@ -98,25 +106,35 @@ impl World {
         self.components[i] = Some(ComponentStorage::new::<T>());
     }
 
-    unsafe fn storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
+    unsafe fn resource_storage_mut<T:Resource>(&mut self) -> &mut ResourceStorage {
+        let i = T::id() as usize;
+        return self.resources.get_unchecked_mut(i).as_mut().expect("resource type not registered!");
+    }
+
+    unsafe fn resource_storage<T:Resource>(&self) -> &ResourceStorage {
+        let i = T::id() as usize;
+        return self.resources.get_unchecked(i).as_ref().expect("resource type not registered!");
+    }
+
+    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
         let i = T::id() as usize;
         return self.components.get_unchecked_mut(i).as_mut().expect("component type not registered!");
     }
 
-    unsafe fn storage<T:Component>(&self) -> &ComponentStorage {
+    unsafe fn component_storage<T:Component>(&self) -> &ComponentStorage {
         let i = T::id() as usize;
         return self.components.get_unchecked(i).as_ref().expect("component type not registered!");
     }
 
     pub fn attach<T:Component>(&mut self, id:Id, component:T) {
         unsafe {
-            self.storage_mut::<T>().get_mut().insert(id, RefCell::new(component));
+            self.component_storage_mut::<T>().get_mut().insert(id, RefCell::new(component));
         }
     }
 
     pub fn detach<T:Component>(&mut self, id:Id) -> Option<T> {
         unsafe {
-            let cmp:Option<RefCell<T>> = self.storage_mut::<T>().get_mut().remove(id);
+            let cmp:Option<RefCell<T>> = self.component_storage_mut::<T>().get_mut().remove(id);
             if let Some(cmp) = cmp {
                 return Some(cmp.into_inner());
             }
@@ -126,7 +144,7 @@ impl World {
 
     pub fn get_mut<T:Component>(&self, id:Id) -> Option<RefMut<T>> {
         unsafe {
-            let storage = self.storage::<T>().get();
+            let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
             if let Some(cmp) = cmp {
                 if let Ok(cmd) = cmp.try_borrow_mut() {
@@ -139,7 +157,7 @@ impl World {
 
     pub fn get<T:Component>(&self, id:Id) -> Option<Ref<T>> {
         unsafe {
-            let storage = self.storage::<T>().get();
+            let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
             if let Some(cmp) = cmp {
                 if let Ok(cmd) = cmp.try_borrow() {
@@ -152,7 +170,7 @@ impl World {
 
     pub fn has<T:Component>(&self, id:Id) -> bool {
         unsafe {
-            let storage = self.storage::<T>().get();
+            let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
             if cmp.is_some() {
                 return true;
@@ -188,7 +206,7 @@ impl World {
             }
         }
         let mut serialized_resources =HashMap::new();
-        for index in 0..MAX_COMPONENTS {
+        for index in 0..MAX_RESOURCES {
             let id = index as ResourceId;
             if let Some(Some(storage)) = self.resources.get(index) {
                 let mut bytes = Vec::new();
@@ -223,6 +241,7 @@ impl World {
             let index = *id as usize;
             if let Some(Some(storage)) = self.resources.get_mut(index) {
                 unsafe {
+                    dbg!(bytes);
                     storage.deserialize(bytes);
                 }
             }

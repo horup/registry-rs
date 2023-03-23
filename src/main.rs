@@ -53,15 +53,23 @@ impl Component for Player {
 struct Monster {
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-struct Global {
-}
-
 impl Component for Monster {
     fn id() -> u8 {
         4
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct Global {
+    pub monster_count:i32
+}
+
+impl Resource for Global {
+    fn id() -> ResourceId {
+        1
+    }
+}
+
 
 fn measure<F:FnMut()->()>(name:&str, mut f:F) {
     let now = Instant::now();
@@ -76,10 +84,11 @@ fn main() {
     let size = 1000000;
     {
         let mut world = World::new();
-        world.register::<Health>();
-        world.register::<Position>();
-        world.register::<Player>();
-        world.register::<Monster>();
+        world.register_component::<Health>();
+        world.register_component::<Position>();
+        world.register_component::<Player>();
+        world.register_component::<Monster>();
+        world.register_resource::<Global>();
         measure("World: creating 1 million monsters", || {
             for i in 0..size {
                 let mut e = world.spawn();
@@ -92,6 +101,8 @@ fn main() {
                 });
                 e.attach(Monster {
                 });
+
+                world.resource_mut::<Global>().unwrap().monster_count += 1;
             }
         });
         measure("World: moving 1 million monsters", || {
@@ -107,7 +118,7 @@ fn main() {
             world.serialize(&mut bytes);
         });
 
-        measure("World: clearing all entnties and components", || {
+        measure("World: clearing all entities, components and resources", || {
             world.clear();
         });
 
@@ -117,6 +128,7 @@ fn main() {
         
         measure("World: clone", || {
             let mut world2 = world.clone();
+            dbg!(world2.resource_mut::<Global>().unwrap());
         });
     }
 /*
