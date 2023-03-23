@@ -1,20 +1,7 @@
-use std::{time::Instant, cell::RefCell, collections::HashMap};
+use std::time::Instant;
+
 use serde::{Serialize, Deserialize};
-mod component_storage;
-use slotmap::{SecondaryMap, SlotMap};
-pub use component_storage::*;
-mod component;
-pub use component::*;
-mod id;
-pub use id::*;
-mod world;
-pub use world::*;
-mod entity;
-pub use entity::*;
-mod singleton;
-pub use singleton::*;
-pub mod singleton_storage;
-pub use singleton_storage::*;
+use world::{Component, Singleton, SingletonId, World};
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
@@ -130,67 +117,4 @@ fn main() {
             dbg!(world2.singleton_mut::<Global>().unwrap());
         });
     }
-/*
-    {
-        let mut entities:SlotMap<Id,()> = SlotMap::default();
-        let mut positions:SecondaryMap<Id, Position> = SecondaryMap::default();  
-
-        for i in 0..size {
-            let id = entities.insert(());
-            positions.insert(id, Position {
-                x: i as f32,
-                y: i as f32,
-            });
-        }
-
-        measure("Slotmap: moving 1 million monsters", || {
-            for e in entities.keys() {
-                let mut pos = positions.get_mut(e).unwrap();
-                pos.x += 1.0;
-            }
-        });
-    }
-
-    {
-        let mut entities:SlotMap<Id,()> = SlotMap::default();
-        let mut positions:SecondaryMap<Id, RefCell<Position>> = SecondaryMap::default();  
-
-        for i in 0..size {
-            let id = entities.insert(());
-            positions.insert(id, RefCell::new(Position {
-                x: i as f32,
-                y: i as f32,
-            }));
-        }
-
-        measure("Slotmap Refcell: moving 1 million monsters", || {
-            for e in entities.keys() {
-                let mut pos = positions.get(e).unwrap().borrow_mut();
-                pos.x += 1.0;
-            }
-        });
-
-        measure("Slotmap Refcell: moving 1 million monsters using positions iter", || {
-            for (id, mut pos) in positions.iter_mut() {
-                pos.borrow_mut().x += 1.0;
-            }
-        });
-    }
-
-    {
-        let mut vec = Vec::new();
-        for i in 0..size {
-            vec.push(RefCell::new(Position {
-                x: i as f32,
-                y: i as f32,
-            }));
-        }
-
-        measure("Vec moving 1 million monsters", || {
-            for pos in vec.iter_mut() {
-                pos.borrow_mut().x += 1.0;
-            }
-        });
-    }
-    */
 }
