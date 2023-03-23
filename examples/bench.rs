@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use world::{Component, Singleton, SingletonId, World, EntityId, Query, Entity};
+use world::{Component, Singleton, SingletonId, World, EntityId, Query};
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
@@ -150,7 +150,7 @@ fn main() {
 
             });
             let id = e.id();
-            let mut e = world.entity(id).unwrap();
+            let _e = world.entity(id).unwrap();
             //let mut player = e.get_mut::<Player>().unwrap();
             let _world2 = world.clone();
         });
