@@ -6,7 +6,7 @@ use crate::Component;
 
 pub struct ComponentStorage {
     pub ptr:*mut (),
-    pub drop_fn:Box<dyn Fn() -> ()>,
+    pub drop_fn:Box<dyn Fn()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
     pub remove_fn:Box<dyn Fn(Id)>,
@@ -54,7 +54,7 @@ impl ComponentStorage {
                 *new = org.clone();
             }
 
-            return new;
+            new
         };
         let ptr = ptr as *mut ();
         Self {

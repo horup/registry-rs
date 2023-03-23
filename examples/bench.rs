@@ -57,7 +57,7 @@ impl Singleton for Global {
 }
 
 
-fn measure<F:FnMut()->()>(name:&str, mut f:F) {
+fn measure<F:FnMut()>(name:&str, mut f:F) {
     let now = Instant::now();
     f();
     let elapsed = Instant::now() - now;

@@ -8,7 +8,7 @@ use crate::Singleton;
 
 pub struct SingletonStorage {
     pub ptr:*mut (),
-    pub drop_fn:Box<dyn Fn() -> ()>,
+    pub drop_fn:Box<dyn Fn()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
     pub clone_fn:Box<dyn Fn()->Self>,
@@ -47,7 +47,7 @@ impl SingletonStorage {
                     *new = org;
                 }
                
-                return storage;
+                storage
             }
         };
         let clear_fn = move || {
@@ -75,7 +75,7 @@ impl SingletonStorage {
                 return Some(cell);
             }
 
-            return None;
+            None
         }
     }
 
@@ -87,7 +87,7 @@ impl SingletonStorage {
                 return Some(cell);
             }
 
-            return None;
+            None
         }
     }  
 

@@ -1,10 +1,10 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute}, collections::HashMap, io::BufWriter};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage};
 
-const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
-const MAX_SINGLETONS:usize = (2 as u32).pow((size_of::<SingletonId>() * 8) as u32) as usize;
+const MAX_COMPONENTS:usize = 2_u32.pow(ComponentId::BITS) as usize;
+const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
 #[derive(Serialize, Deserialize)]
 struct SerializableWorld {
@@ -133,7 +133,7 @@ impl World {
             if let Some(cmp) = cmp {
                 return Some(cmp.into_inner());
             }
-            return None;
+            None
         }
     }
 
@@ -146,7 +146,7 @@ impl World {
                     return Some(cmd);
                 }
             }
-            return None;
+            None
         }
     }
 
@@ -159,7 +159,7 @@ impl World {
                     return Some(cmd);
                 }
             }
-            return None;
+            None
         }
     }
 
@@ -170,7 +170,7 @@ impl World {
             if cmp.is_some() {
                 return true;
             }
-            return false;
+            false
         }
     }
 
@@ -222,7 +222,7 @@ impl World {
     }
 
     pub fn deserialize(&mut self, bytes:&[u8]) {
-        let w:SerializableWorld = bincode::deserialize(&bytes).expect("failed to deserialize World");
+        let w:SerializableWorld = bincode::deserialize(bytes).expect("failed to deserialize World");
         self.entities = w.entities;
         for (id, bytes) in w.serialized_components.iter() {
             let index = *id as usize;
