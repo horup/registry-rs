@@ -1,27 +1,27 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage};
+use crate::{Component, EntityId, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query};
 
 const MAX_COMPONENTS:usize = 2_u32.pow(ComponentId::BITS) as usize;
 const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
 #[derive(Serialize, Deserialize)]
 struct SerializableWorld {
-    entities:SlotMap<Id, ()>,
+    entities:SlotMap<EntityId, ()>,
     serialized_components:HashMap<ComponentId, Vec<u8>>,
     serialized_singletons:HashMap<SingletonId, Vec<u8>>
 }
 
 pub struct World {
-    entities:SlotMap<Id, ()>,
+    entities:SlotMap<EntityId, ()>,
     components:[Option<ComponentStorage>;MAX_COMPONENTS],
     singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
 pub struct Entities<'a> {
     world:&'a World,
-    keys:Keys<'a, Id, ()>
+    keys:Keys<'a, EntityId, ()>
 }
 
 impl<'a> Iterator for Entities<'a> {
@@ -30,6 +30,26 @@ impl<'a> Iterator for Entities<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(id) = self.keys.next() {
             return Some(Entity::new(id, self.world));
+        }
+
+        None
+    }
+}
+
+pub struct QueryIter<'a, T> where T:Sized + Query<'a> {
+    world:&'a World,
+    keys:Keys<'a, EntityId, ()>,
+    phantom:PhantomData<T>
+}
+
+impl<'a, T> Iterator for QueryIter<'a, T> where T:Sized + Query<'a> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(id) = self.keys.next() {
+            if let Some(entity_view) = T::from_world(self.world, id) {
+                return Some(entity_view);
+            }
         }
 
         None
@@ -84,14 +104,22 @@ impl World {
         Entities { world: self, keys: self.entities.keys() }
     }
 
-    pub fn entity(&self, id:Id) -> Option<Entity> {
+    pub fn query<'a, T:Query<'a>>(&'a self) -> QueryIter<'a, T> {
+        QueryIter {
+            world: self,
+            keys: self.entities.keys(),
+            phantom: PhantomData::default(),
+        }
+    }
+
+    pub fn entity(&self, id:EntityId) -> Option<Entity> {
         if self.entities.get(id).is_some() {
             return Some(Entity::new(id, self));
         }
         None
     } 
 
-    pub fn entity_mut(&mut self, id:Id) -> Option<EntityMut> {
+    pub fn entity_mut(&mut self, id:EntityId) -> Option<EntityMut> {
         if self.entities.get(id).is_some() {
             return Some(EntityMut::new(id, self));
         }
@@ -121,13 +149,13 @@ impl World {
         return self.components.get_unchecked(i).as_ref().expect("component type not registered!");
     }
 
-    pub fn attach<T:Component>(&mut self, id:Id, component:T) {
+    pub fn attach<T:Component>(&mut self, id:EntityId, component:T) {
         unsafe {
             self.component_storage_mut::<T>().get_mut().insert(id, RefCell::new(component));
         }
     }
 
-    pub fn detach<T:Component>(&mut self, id:Id) -> Option<T> {
+    pub fn detach<T:Component>(&mut self, id:EntityId) -> Option<T> {
         unsafe {
             let cmp:Option<RefCell<T>> = self.component_storage_mut::<T>().get_mut().remove(id);
             if let Some(cmp) = cmp {
@@ -137,7 +165,7 @@ impl World {
         }
     }
 
-    pub fn get_mut<T:Component>(&self, id:Id) -> Option<RefMut<T>> {
+    pub fn get_mut<T:Component>(&self, id:EntityId) -> Option<RefMut<T>> {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
@@ -150,7 +178,7 @@ impl World {
         }
     }
 
-    pub fn get<T:Component>(&self, id:Id) -> Option<Ref<T>> {
+    pub fn get<T:Component>(&self, id:EntityId) -> Option<Ref<T>> {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
@@ -163,7 +191,7 @@ impl World {
         }
     }
 
-    pub fn has<T:Component>(&self, id:Id) -> bool {
+    pub fn has<T:Component>(&self, id:EntityId) -> bool {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
@@ -179,7 +207,7 @@ impl World {
         return EntityMut::new(id, self);
     }
 
-    pub fn despawn(&mut self, id:Id) {
+    pub fn despawn(&mut self, id:EntityId) {
         self.entities.remove(id);
         for storage in self.components.iter_mut() {
             if let Some(storage) = storage {

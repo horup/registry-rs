@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::io::BufWriter;
 use slotmap::SecondaryMap;
-use crate::Id;
+use crate::EntityId;
 use crate::Component;
 
 pub struct ComponentStorage {
@@ -9,14 +9,14 @@ pub struct ComponentStorage {
     pub drop_fn:Box<dyn Fn()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
-    pub remove_fn:Box<dyn Fn(Id)>,
+    pub remove_fn:Box<dyn Fn(EntityId)>,
     pub clear_fn:Box<dyn Fn()>,
     pub clone_fn:Box<dyn Fn()->Self>
 }
 
 impl ComponentStorage {
     pub fn new<T:Component>() -> Self {
-        let map:SecondaryMap<Id, RefCell<T>> = SecondaryMap::new();
+        let map:SecondaryMap<EntityId, RefCell<T>> = SecondaryMap::new();
         let boxed = Box::new(map);
         let ptr = Box::into_raw(boxed);
         let f = move || {
@@ -36,7 +36,7 @@ impl ComponentStorage {
                 *ptr.as_mut().unwrap() = bincode::deserialize(bytes).unwrap();
             }
         };
-        let remove_fn = move |id:Id| {
+        let remove_fn = move |id:EntityId| {
             unsafe {
                 ptr.as_mut().unwrap().remove(id);
             }
@@ -68,21 +68,21 @@ impl ComponentStorage {
         }      
     }
     
-    pub unsafe fn get_mut<T>(&mut self) -> &mut SecondaryMap<Id, RefCell<T>> {
-        let ptr = self.ptr as *mut SecondaryMap<Id, RefCell<T>>;
+    pub unsafe fn get_mut<T>(&mut self) -> &mut SecondaryMap<EntityId, RefCell<T>> {
+        let ptr = self.ptr as *mut SecondaryMap<EntityId, RefCell<T>>;
         unsafe {
             return ptr.as_mut().unwrap();
         }
     }
 
-    pub unsafe fn get<T>(&self) -> &SecondaryMap<Id, RefCell<T>> {
-        let ptr = self.ptr as *const SecondaryMap<Id, RefCell<T>>;
+    pub unsafe fn get<T>(&self) -> &SecondaryMap<EntityId, RefCell<T>> {
+        let ptr = self.ptr as *const SecondaryMap<EntityId, RefCell<T>>;
         unsafe {
             return ptr.as_ref().unwrap();
         }
     }  
 
-    pub fn remove(&mut self, id:Id) {
+    pub fn remove(&mut self, id:EntityId) {
         self.remove_fn.as_mut()(id);
     }
 

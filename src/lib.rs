@@ -1,16 +1,15 @@
-
-
 mod component_storage;
-
 pub use component_storage::*;
 mod component;
 pub use component::*;
-mod id;
-pub use id::*;
+mod entity_id;
+pub use entity_id::*;
 mod world;
 pub use world::*;
 mod entity;
 pub use entity::*;
+mod query;
+pub use query::*;
 mod singleton;
 pub use singleton::*;
 pub mod singleton_storage;

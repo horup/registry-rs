@@ -1,5 +1,5 @@
 use slotmap::new_key_type;
 
 new_key_type! {
-    pub struct Id;
+    pub struct EntityId;
 }

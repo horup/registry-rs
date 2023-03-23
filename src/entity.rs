@@ -1,20 +1,19 @@
 use std::cell::{Ref, RefMut};
-
-use crate::{Id, World, Component};
+use crate::{EntityId, World, Component};
 
 pub struct EntityMut<'a> {
-    id:Id,
+    id:EntityId,
     world:&'a mut World
 }
 
 impl<'a> EntityMut<'a> {
-    pub fn new(id:Id, world:&'a mut World) -> Self {
+    pub fn new(id:EntityId, world:&'a mut World) -> Self {
         Self {
             id,
             world
         }
     }
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> EntityId {
         self.id
     }
 
@@ -36,26 +35,26 @@ impl<'a> EntityMut<'a> {
 }
 
 pub struct Entity<'a> {
-    id:Id,
+    id:EntityId,
     world:&'a World
 }
 
 impl<'a> Entity<'a> {
-    pub fn new(id:Id, world:&'a World) -> Self {
+    pub fn new(id:EntityId, world:&'a World) -> Self {
         Self {
             id,
             world
         }
     }
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> EntityId {
         self.id
     }
 
-    pub fn get<T:Component>(&self) -> Option<Ref<T>> {
+    pub fn get<T:Component>(&'a self) -> Option<Ref<'a, T>> {
         self.world.get::<T>(self.id)
     }
 
-    pub fn get_mut<T:Component>(&mut self) -> Option<RefMut<T>> {
+    pub fn get_mut<T:Component>(&'a mut self) -> Option<RefMut<'a, T>> {
         self.world.get_mut::<T>(self.id)
     }
 }
