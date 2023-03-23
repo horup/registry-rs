@@ -4,10 +4,9 @@ use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::io::BufWriter;
-use crate::Resource;
+use crate::Singleton;
 
-pub struct ResourceStorage {
-    pub type_id:TypeId,
+pub struct SingletonStorage {
     pub ptr:*mut (),
     pub drop_fn:Box<dyn Fn() -> ()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
@@ -16,8 +15,8 @@ pub struct ResourceStorage {
     pub clear_fn:Box<dyn Fn()>,
 }
 
-impl ResourceStorage {
-    pub fn new<T:Resource>() -> Self {
+impl SingletonStorage {
+    pub fn new<T:Singleton>() -> Self {
         let resource = RefCell::new(T::default());
         let boxed = Box::new(resource);
         let ptr = Box::into_raw(boxed);
@@ -59,7 +58,6 @@ impl ResourceStorage {
         };
         let ptr = ptr as *mut ();
         Self {
-            type_id:TypeId::of::<T>(),
             ptr,
             drop_fn:Box::new(f),
             serialize_fn:Box::new(serialize_fn),
@@ -106,13 +104,13 @@ impl ResourceStorage {
     }
 }
 
-impl Drop for ResourceStorage {
+impl Drop for SingletonStorage {
     fn drop(&mut self) {
         self.drop_fn.as_mut()();
     }
 }
 
-impl Clone for ResourceStorage {
+impl Clone for SingletonStorage {
     fn clone(&self) -> Self {
         self.clone_fn.as_ref()()
     }

@@ -1,5 +1,4 @@
 use std::{time::Instant, cell::RefCell, collections::HashMap};
-
 use serde::{Serialize, Deserialize};
 mod component_storage;
 use slotmap::{SecondaryMap, SlotMap};
@@ -12,10 +11,10 @@ mod world;
 pub use world::*;
 mod entity;
 pub use entity::*;
-mod resource;
-pub use resource::*;
-pub mod resource_storage;
-pub use resource_storage::*;
+mod singleton;
+pub use singleton::*;
+pub mod singleton_storage;
+pub use singleton_storage::*;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
@@ -64,8 +63,8 @@ struct Global {
     pub monster_count:i32
 }
 
-impl Resource for Global {
-    fn id() -> ResourceId {
+impl Singleton for Global {
+    fn id() -> SingletonId {
         1
     }
 }
@@ -88,7 +87,7 @@ fn main() {
         world.register_component::<Position>();
         world.register_component::<Player>();
         world.register_component::<Monster>();
-        world.register_resource::<Global>();
+        world.register_singleton::<Global>();
         measure("World: creating 1 million monsters", || {
             for i in 0..size {
                 let mut e = world.spawn();
@@ -102,7 +101,7 @@ fn main() {
                 e.attach(Monster {
                 });
 
-                world.resource_mut::<Global>().unwrap().monster_count += 1;
+                world.singleton_mut::<Global>().unwrap().monster_count += 1;
             }
         });
         measure("World: moving 1 million monsters", || {
@@ -128,7 +127,7 @@ fn main() {
         
         measure("World: clone", || {
             let mut world2 = world.clone();
-            dbg!(world2.resource_mut::<Global>().unwrap());
+            dbg!(world2.singleton_mut::<Global>().unwrap());
         });
     }
 /*

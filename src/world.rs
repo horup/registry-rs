@@ -1,22 +1,22 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{size_of, MaybeUninit, transmute, swap, take}, path::Components, collections::HashMap, io::BufWriter, borrow::Borrow};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
-use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Resource, ResourceId, ResourceStorage};
+use crate::{Component, Id, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage};
 
 const MAX_COMPONENTS:usize = (2 as u32).pow((size_of::<ComponentId>() * 8) as u32) as usize;
-const MAX_RESOURCES:usize = (2 as u32).pow((size_of::<ResourceId>() * 8) as u32) as usize;
+const MAX_SINGLETONS:usize = (2 as u32).pow((size_of::<SingletonId>() * 8) as u32) as usize;
 
 #[derive(Serialize, Deserialize)]
 struct SerializableWorld {
     entities:SlotMap<Id, ()>,
     serialized_components:HashMap<ComponentId, Vec<u8>>,
-    serialized_resources:HashMap<ResourceId, Vec<u8>>
+    serialized_singletons:HashMap<SingletonId, Vec<u8>>
 }
 
 pub struct World {
     entities:SlotMap<Id, ()>,
     components:[Option<ComponentStorage>;MAX_COMPONENTS],
-    resources:[Option<ResourceStorage>;MAX_RESOURCES]
+    singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
 pub struct Entities<'a> {
@@ -47,36 +47,36 @@ impl World {
             }
             let components = transmute::<_, [Option<ComponentStorage>;MAX_COMPONENTS]>(data);
 
-            let mut data:[MaybeUninit<Option<ResourceStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
+            let mut data:[MaybeUninit<Option<SingletonStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
             for elem in &mut data[..] {
                 elem.write(None);
             }
-            let resources = transmute::<_, [Option<ResourceStorage>;MAX_COMPONENTS]>(data);
+            let singletons = transmute::<_, [Option<SingletonStorage>;MAX_COMPONENTS]>(data);
             Self {
                 entities,
                 components,
-                resources
+                singletons
             }
         }
     }
 
-    pub fn register_resource<T:Resource>(&mut self) {
+    pub fn register_singleton<T:Singleton>(&mut self) {
         let i = T::id() as usize;
-        if self.resources[i].is_some() {
-            panic!("resource type already registered!");
+        if self.singletons[i].is_some() {
+            panic!("singleton type already registered!");
         }
-        self.resources[i] = Some(ResourceStorage::new::<T>());
+        self.singletons[i] = Some(SingletonStorage::new::<T>());
     }
 
-    pub fn resource<T:Resource>(&self) -> Option<Ref<T>> {
+    pub fn singleton<T:Singleton>(&self) -> Option<Ref<T>> {
         unsafe {
-            self.resource_storage::<T>().get::<T>()
+            self.singleton_storage::<T>().get::<T>()
         }
     }
 
-    pub fn resource_mut<T:Resource>(&self) -> Option<RefMut<T>> {
+    pub fn singleton_mut<T:Singleton>(&self) -> Option<RefMut<T>> {
         unsafe {
-            self.resource_storage::<T>().get_mut::<T>()
+            self.singleton_storage::<T>().get_mut::<T>()
         }
     }
 
@@ -106,14 +106,9 @@ impl World {
         self.components[i] = Some(ComponentStorage::new::<T>());
     }
 
-    unsafe fn resource_storage_mut<T:Resource>(&mut self) -> &mut ResourceStorage {
+    unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
         let i = T::id() as usize;
-        return self.resources.get_unchecked_mut(i).as_mut().expect("resource type not registered!");
-    }
-
-    unsafe fn resource_storage<T:Resource>(&self) -> &ResourceStorage {
-        let i = T::id() as usize;
-        return self.resources.get_unchecked(i).as_ref().expect("resource type not registered!");
+        return self.singletons.get_unchecked(i).as_ref().expect("singleton type not registered!");
     }
 
     unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
@@ -205,21 +200,21 @@ impl World {
                 }
             }
         }
-        let mut serialized_resources =HashMap::new();
-        for index in 0..MAX_RESOURCES {
-            let id = index as ResourceId;
-            if let Some(Some(storage)) = self.resources.get(index) {
+        let mut serialized_singletons =HashMap::new();
+        for index in 0..MAX_SINGLETONS {
+            let id = index as SingletonId;
+            if let Some(Some(storage)) = self.singletons.get(index) {
                 let mut bytes = Vec::new();
                 unsafe {
                     storage.serialize(&mut bytes);
-                    serialized_resources.insert(id, bytes);
+                    serialized_singletons.insert(id, bytes);
                 }
             }
         }
         let w = SerializableWorld {
             entities:self.entities.clone(),
             serialized_components,
-            serialized_resources
+            serialized_singletons
         };
 
         let writer = BufWriter::new(bytes);
@@ -237,9 +232,9 @@ impl World {
                 }
             }
         }
-        for (id, bytes) in w.serialized_resources.iter() {
+        for (id, bytes) in w.serialized_singletons.iter() {
             let index = *id as usize;
-            if let Some(Some(storage)) = self.resources.get_mut(index) {
+            if let Some(Some(storage)) = self.singletons.get_mut(index) {
                 unsafe {
                     dbg!(bytes);
                     storage.deserialize(bytes);
@@ -255,7 +250,7 @@ impl World {
                 storage.clear();
             }
         }
-        for storage in self.resources.iter_mut() {
+        for storage in self.singletons.iter_mut() {
             if let Some(storage) = storage {
                 storage.clear();
             }
@@ -265,6 +260,6 @@ impl World {
 
 impl Clone for World {
     fn clone(&self) -> Self {
-        Self { entities: self.entities.clone(), components: self.components.clone(), resources: self.resources.clone() }
+        Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone() }
     }
 }
