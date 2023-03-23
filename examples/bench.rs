@@ -111,6 +111,13 @@ fn main() {
         });
         
         measure("World: clone", || {
+            let mut e = world.spawn();
+            e.attach(Player {
+
+            });
+            let id = e.id();
+            let mut e = world.entity(id).unwrap();
+            //let mut player = e.get_mut::<Player>().unwrap();
             let _world2 = world.clone();
         });
     }

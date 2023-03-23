@@ -188,7 +188,7 @@ impl World {
         }
     }
 
-    pub fn serialize(&self, bytes:&mut Vec<u8>) {
+    pub fn serialize(&mut self, bytes:&mut Vec<u8>) {
         let mut serialized_components =HashMap::new();
         for index in 0..MAX_COMPONENTS {
             let id = index as ComponentId;
@@ -255,10 +255,8 @@ impl World {
             }
         }
     }
-}
 
-impl Clone for World {
-    fn clone(&self) -> Self {
+    pub fn clone(&mut self) -> Self {
         Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone() }
     }
 }
