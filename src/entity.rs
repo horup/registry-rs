@@ -29,7 +29,7 @@ impl<'a> EntityMut<'a> {
         self.world.get::<T>(self.id)
     }
 
-    pub fn get_mut<T:Component>(&mut self) -> Option<RefMut<T>> {
+    pub fn get_mut<T:Component>(&self) -> Option<RefMut<T>> {
         self.world.get_mut::<T>(self.id)
     }
 }
@@ -54,7 +54,7 @@ impl<'a> Entity<'a> {
         self.world.get::<T>(self.id)
     }
 
-    pub fn get_mut<T:Component>(&'a mut self) -> Option<RefMut<'a, T>> {
+    pub fn get_mut<T:Component>(&'a self) -> Option<RefMut<'a, T>> {
         self.world.get_mut::<T>(self.id)
     }
 }
