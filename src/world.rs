@@ -158,13 +158,13 @@ impl World {
         }
     }
 
-    pub fn attach<T:Component>(&mut self, id:EntityId, component:T) {
+    pub fn component_attach<T:Component>(&mut self, id:EntityId, component:T) {
         unsafe {
             self.component_storage_mut::<T>().get_mut().insert(id, RefCell::new(component));
         }
     }
 
-    pub fn detach<T:Component>(&mut self, id:EntityId) -> Option<T> {
+    pub fn component_detach<T:Component>(&mut self, id:EntityId) -> Option<T> {
         unsafe {
             let cmp:Option<RefCell<T>> = self.component_storage_mut::<T>().get_mut().remove(id);
             if let Some(cmp) = cmp {
@@ -174,7 +174,7 @@ impl World {
         }
     }
 
-    pub fn get_mut<T:Component>(&self, id:EntityId) -> Option<RefMut<T>> {
+    pub fn component_mut<T:Component>(&self, id:EntityId) -> Option<RefMut<T>> {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
@@ -187,7 +187,7 @@ impl World {
         }
     }
 
-    pub fn get<T:Component>(&self, id:EntityId) -> Option<Ref<T>> {
+    pub fn component<T:Component>(&self, id:EntityId) -> Option<Ref<T>> {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);
@@ -200,7 +200,7 @@ impl World {
         }
     }
 
-    pub fn has<T:Component>(&self, id:EntityId) -> bool {
+    pub fn component_has<T:Component>(&self, id:EntityId) -> bool {
         unsafe {
             let storage = self.component_storage::<T>().get();
             let cmp:Option<&RefCell<T>> = storage.get(id);

@@ -71,8 +71,8 @@ struct MonsterQuery<'a> {
 
 impl<'a> Query<'a> for MonsterQuery<'a> {
     fn query(world:&'a World, id:EntityId) -> Option<Self> {
-        let position = world.get_mut::<Position>(id)?;
-        let monster = world.get_mut::<Monster>(id)?;
+        let position = world.component_mut::<Position>(id)?;
+        let monster = world.component_mut::<Monster>(id)?;
         Some(Self {
             position,
             monster,

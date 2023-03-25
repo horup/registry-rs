@@ -18,19 +18,19 @@ impl<'a> EntityMut<'a> {
     }
 
     pub fn attach<T:Component>(&mut self, component:T) {
-        self.world.attach(self.id, component);
+        self.world.component_attach(self.id, component);
     }
 
     pub fn detach<T:Component>(&mut self) {
-        self.world.detach::<T>(self.id);
+        self.world.component_detach::<T>(self.id);
     }
 
     pub fn get<T:Component>(&self) -> Option<Ref<T>> {
-        self.world.get::<T>(self.id)
+        self.world.component::<T>(self.id)
     }
 
     pub fn get_mut<T:Component>(&self) -> Option<RefMut<T>> {
-        self.world.get_mut::<T>(self.id)
+        self.world.component_mut::<T>(self.id)
     }
 }
 
@@ -51,10 +51,10 @@ impl<'a> Entity<'a> {
     }
 
     pub fn get<T:Component>(&'a self) -> Option<Ref<'a, T>> {
-        self.world.get::<T>(self.id)
+        self.world.component::<T>(self.id)
     }
 
     pub fn get_mut<T:Component>(&'a self) -> Option<RefMut<'a, T>> {
-        self.world.get_mut::<T>(self.id)
+        self.world.component_mut::<T>(self.id)
     }
 }
