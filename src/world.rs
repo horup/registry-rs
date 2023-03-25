@@ -1,4 +1,4 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData};
+use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData, any::type_name};
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use crate::{Component, EntityId, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query};
@@ -83,7 +83,7 @@ impl World {
     pub fn register_singleton<T:Singleton>(&mut self) {
         let i = T::id() as usize;
         if self.singletons[i].is_some() {
-            panic!("singleton type already registered!");
+            panic!("{} singleton already registered!", type_name::<T>());
         }
         self.singletons[i] = Some(SingletonStorage::new::<T>());
     }
@@ -129,24 +129,33 @@ impl World {
     pub fn register_component<T:Component>(&mut self) {
         let i = T::id() as usize;
         if self.components[i].is_some() {
-            panic!("component type already registered!");
+            panic!("{} component already registered!", type_name::<T>());
         }
         self.components[i] = Some(ComponentStorage::new::<T>());
     }
 
     unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
         let i = T::id() as usize;
-        return self.singletons.get_unchecked(i).as_ref().expect("singleton type not registered!");
+        match self.singletons.get_unchecked(i).as_ref() {
+            Some(storage) => storage,
+            None => panic!("{} singleton type not registered!", type_name::<T>()),
+        }
     }
 
     unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
         let i = T::id() as usize;
-        return self.components.get_unchecked_mut(i).as_mut().expect("component type not registered!");
+        match self.components.get_unchecked_mut(i).as_mut() {
+            Some(storage) => storage,
+            None => panic!("{} component type not registered!", type_name::<T>()),
+        }
     }
 
     unsafe fn component_storage<T:Component>(&self) -> &ComponentStorage {
         let i = T::id() as usize;
-        return self.components.get_unchecked(i).as_ref().expect("component type not registered!");
+        match self.components.get_unchecked(i).as_ref() {
+            Some(storage) => storage,
+            None => panic!("{} component type not registered!", type_name::<T>()),
+        }
     }
 
     pub fn attach<T:Component>(&mut self, id:EntityId, component:T) {
