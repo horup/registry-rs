@@ -1,5 +1,5 @@
-use crate::{World, EntityId};
+use crate::{Registry, EntityId};
 
 pub trait Query<'a> where Self:Sized {
-    fn query(world:&'a World, id:EntityId) -> Option<Self>;
+    fn query(registry:&'a Registry, id:EntityId) -> Option<Self>;
 }

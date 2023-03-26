@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use world::{Component, Singleton, SingletonId, World, EntityId, Query};
+use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query};
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
@@ -70,9 +70,9 @@ struct MonsterQuery<'a> {
 }
 
 impl<'a> Query<'a> for MonsterQuery<'a> {
-    fn query(world:&'a World, id:EntityId) -> Option<Self> {
-        let position = world.component_mut::<Position>(id)?;
-        let monster = world.component_mut::<Monster>(id)?;
+    fn query(registry:&'a Registry, id:EntityId) -> Option<Self> {
+        let position = registry.component_mut::<Position>(id)?;
+        let monster = registry.component_mut::<Monster>(id)?;
         Some(Self {
             position,
             monster,
@@ -83,15 +83,15 @@ impl<'a> Query<'a> for MonsterQuery<'a> {
 fn main() {
     let size = 1000000;
     {
-        let mut world = World::new();
-        world.register_component::<Health>();
-        world.register_component::<Position>();
-        world.register_component::<Player>();
-        world.register_component::<Monster>();
-        world.register_singleton::<Global>();
-        measure("World: creating 1 million monsters", || {
+        let mut registry = Registry::new();
+        registry.register_component::<Health>();
+        registry.register_component::<Position>();
+        registry.register_component::<Player>();
+        registry.register_component::<Monster>();
+        registry.register_singleton::<Global>();
+        measure("Registry: creating 1 million monsters", || {
             for i in 0..size {
-                let mut e = world.spawn();
+                let mut e = registry.spawn();
                 e.attach(Health {
                     amount:100.0
                 });
@@ -102,43 +102,43 @@ fn main() {
                 e.attach(Monster {
                 });
 
-                world.singleton_mut::<Global>().unwrap().monster_count += 1;
+                registry.singleton_mut::<Global>().unwrap().monster_count += 1;
             }
         });
-        measure("World: moving 1 million monsters", || {
-            for mut e in world.entities() {
+        measure("Registry: moving 1 million monsters", || {
+            for e in registry.entities() {
                 let mut pos = e.get_mut::<Position>().unwrap();
                 pos.x += 1.0;
             }
         });
-        measure("World: moving 1 million monsters using MonsterQuery", || {
-            for mut monster in world.query::<MonsterQuery>() {
+        measure("Registry: moving 1 million monsters using MonsterQuery", || {
+            for mut monster in registry.query::<MonsterQuery>() {
                 monster.position.x += 1.0;
             }
         });
 
         let mut bytes = Vec::new();
 
-        measure("World: serialize 1 million monsters", || {
-            world.serialize(&mut bytes);
+        measure("Registry: serialize 1 million monsters", || {
+            registry.serialize(&mut bytes);
         });
 
-        measure("World: clearing all entities, components and resources", || {
-            world.clear();
+        measure("Registry: clearing all entities, components and resources", || {
+            registry.clear();
         });
 
-        measure("World: de-serialize 1 million monsters", || {
-            world.deserialize(&bytes);
+        measure("Registry: de-serialize 1 million monsters", || {
+            registry.deserialize(&bytes);
         });
         
-        measure("World: clone", || {
-            let mut e = world.spawn();
+        measure("Registry: clone", || {
+            let mut e = registry.spawn();
             e.attach(Player {
 
             });
             let id = e.id();
-            let _e = world.entity(id).unwrap();
-            let _world2 = world.clone();
+            let _e = registry.entity(id).unwrap();
+            let _ = registry.clone();
         });
     }
 }

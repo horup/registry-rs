@@ -7,20 +7,20 @@ const MAX_COMPONENTS:usize = 2_u32.pow(ComponentId::BITS) as usize;
 const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
 #[derive(Serialize, Deserialize)]
-struct SerializableWorld {
+struct SerializableRegistry {
     entities:SlotMap<EntityId, ()>,
     serialized_components:HashMap<ComponentId, Vec<u8>>,
     serialized_singletons:HashMap<SingletonId, Vec<u8>>
 }
 
-pub struct World {
+pub struct Registry {
     entities:SlotMap<EntityId, ()>,
     components:[Option<ComponentStorage>;MAX_COMPONENTS],
     singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
 pub struct Entities<'a> {
-    world:&'a World,
+    registry:&'a Registry,
     keys:Keys<'a, EntityId, ()>
 }
 
@@ -29,7 +29,7 @@ impl<'a> Iterator for Entities<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(id) = self.keys.next() {
-            return Some(Entity::new(id, self.world));
+            return Some(Entity::new(id, self.registry));
         }
 
         None
@@ -37,7 +37,7 @@ impl<'a> Iterator for Entities<'a> {
 }
 
 pub struct QueryIter<'a, T> where T:Sized + Query<'a> {
-    world:&'a World,
+    registry:&'a Registry,
     keys:Keys<'a, EntityId, ()>,
     phantom:PhantomData<T>
 }
@@ -47,7 +47,7 @@ impl<'a, T> Iterator for QueryIter<'a, T> where T:Sized + Query<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(id) = self.keys.next() {
-            if let Some(q) = T::query(self.world, id) {
+            if let Some(q) = T::query(self.registry, id) {
                 return Some(q);
             }
         }
@@ -56,7 +56,7 @@ impl<'a, T> Iterator for QueryIter<'a, T> where T:Sized + Query<'a> {
     }
 }
 
-impl World {
+impl Registry {
     pub fn new() -> Self {
         unsafe {
             let entities = SlotMap::default();
@@ -101,12 +101,12 @@ impl World {
     }
 
     pub fn entities(&self) -> Entities {
-        Entities { world: self, keys: self.entities.keys() }
+        Entities { registry: self, keys: self.entities.keys() }
     }
 
     pub fn query<'a, T:Query<'a>>(&'a self) -> QueryIter<'a, T> {
         QueryIter {
-            world: self,
+            registry: self,
             keys: self.entities.keys(),
             phantom: PhantomData::default(),
         }
@@ -248,18 +248,18 @@ impl World {
                 }
             }
         }
-        let w = SerializableWorld {
+        let w = SerializableRegistry {
             entities:self.entities.clone(),
             serialized_components,
             serialized_singletons
         };
 
         let writer = BufWriter::new(bytes);
-        bincode::serialize_into(writer, &w).expect("failed to serialize World");
+        bincode::serialize_into(writer, &w).expect("failed to serialize Registry");
     }
 
     pub fn deserialize(&mut self, bytes:&[u8]) {
-        let w:SerializableWorld = bincode::deserialize(bytes).expect("failed to deserialize World");
+        let w:SerializableRegistry = bincode::deserialize(bytes).expect("failed to deserialize Registry");
         self.entities = w.entities;
         for (id, bytes) in w.serialized_components.iter() {
             let index = *id as usize;
