@@ -65,9 +65,9 @@ impl Registry {
             for elem in &mut data[..] {
                 elem.write(None);
             }
-            let components = transmute::<_, [Option<ComponentStorage>;MAX_COMPONENTS]>(data);
+            let components = transmute::<_, [Option<ComponentStorage>;MAX_SINGLETONS]>(data);
 
-            let mut data:[MaybeUninit<Option<SingletonStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
+            let mut data:[MaybeUninit<Option<SingletonStorage>>;MAX_SINGLETONS] = MaybeUninit::uninit().assume_init();
             for elem in &mut data[..] {
                 elem.write(None);
             }
