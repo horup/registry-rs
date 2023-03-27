@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query};
+use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query, Facade, Components};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
@@ -81,6 +81,25 @@ impl<'a> Query<'a> for MonsterQuery<'a> {
     }
 }
 
+struct BenchFacade<'a> {
+    pub monsters:Components<'a, Monster>,
+    pub positions:Components<'a, Position>
+}
+
+struct MonsterFacade<'a> {
+    pub position:RefMut<'a, Position>,
+    pub monster:RefMut<'a, Monster>
+}
+
+impl<'a> Facade<'a> for BenchFacade<'a> {
+    fn new(registry:&'a Registry) -> Self {
+        Self {
+            monsters:registry.components::<Monster>(),
+            positions:registry.components::<Position>()
+        }
+    }
+}
+
 fn main() {
     let size = 1000000;
     {
@@ -115,6 +134,15 @@ fn main() {
         measure("Registry: moving 1 million monsters using MonsterQuery", || {
             for mut monster in registry.query::<MonsterQuery>() {
                 monster.position.x += 1.0;
+            }
+        });
+
+        measure("Registry: moving 1 million monsters using Facade", || {
+            let facade = registry.facade::<BenchFacade>();
+            for (id, _) in facade.monsters.iter() {
+                if let Some(mut pos) = facade.positions.get_mut(id) {
+                    pos.x += 1.0;
+                }
             }
         });
 

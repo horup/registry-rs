@@ -1,45 +1,10 @@
-use std::cell::Ref;
 use std::cell::RefCell;
-use std::cell::RefMut;
 use std::io::BufWriter;
 use slotmap::SecondaryMap;
 use crate::EntityId;
 use crate::Component;
 
-pub struct View<'a, T:Component> {
-    storage:&'a SecondaryMap<EntityId, RefCell<T>>
-}
-
-impl<'a, T:Component> View<'a, T> {
-    pub unsafe fn new(storage:&'a EreasedComponentStorage) -> Self {
-        let storage = storage.get();
-        Self {
-            storage
-        }
-    }
-
-    pub fn get(&self, id:EntityId) -> Option<Ref<T>> {
-        if let Some(c) = self.storage.get(id) {
-            if let Ok(c) = c.try_borrow() {
-                return Some(c);
-            }
-        }
-
-        return None;
-    }
-
-    pub fn get_mut(&self, id:EntityId) -> Option<RefMut<T>> {
-        if let Some(c) = self.storage.get(id) {
-            if let Ok(c) = c.try_borrow_mut() {
-                return Some(c);
-            }
-        }
-
-        return None;
-    }
-}
-
-pub struct EreasedComponentStorage {
+pub struct ComponentsStorage {
     pub ptr:*mut (),
     pub drop_fn:Box<dyn Fn()>,
     pub serialize_fn:Box<dyn Fn(&mut Vec<u8>)>,
@@ -49,7 +14,7 @@ pub struct EreasedComponentStorage {
     pub clone_fn:Box<dyn Fn()->Self>
 }
 
-impl EreasedComponentStorage {
+impl ComponentsStorage {
     pub fn new<T:Component>() -> Self {
         let map:SecondaryMap<EntityId, RefCell<T>> = SecondaryMap::new();
         let boxed = Box::new(map);
@@ -134,13 +99,13 @@ impl EreasedComponentStorage {
     }
 }
 
-impl Drop for EreasedComponentStorage {
+impl Drop for ComponentsStorage {
     fn drop(&mut self) {
         self.drop_fn.as_mut()();
     }
 }
 
-impl Clone for EreasedComponentStorage {
+impl Clone for ComponentsStorage {
     fn clone(&self) -> Self {
         self.clone_fn.as_ref()()
     }

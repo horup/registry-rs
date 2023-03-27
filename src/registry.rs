@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys, SecondaryMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, EreasedComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query, View};
+use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query, Components, Facade};
 
 const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
@@ -16,7 +16,7 @@ struct SerializableRegistry {
 
 pub struct Registry {
     entities:SlotMap<EntityId, ()>,
-    components:FxHashMap<Uuid, EreasedComponentStorage>,
+    components:FxHashMap<Uuid, ComponentsStorage>,
     singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
@@ -76,6 +76,10 @@ impl Registry {
         }
     }
 
+    pub fn facade<'a, T:Facade<'a>>(&'a self) -> T {
+        T::new(self)
+    }
+    
     pub fn register_singleton<T:Singleton>(&mut self) {
         let i = T::id() as usize;
         if self.singletons[i].is_some() {
@@ -127,7 +131,7 @@ impl Registry {
         if self.components.get(&id).is_some() {
             panic!("{} component already registered!", type_name::<T>());
         }
-        self.components.insert(id, EreasedComponentStorage::new::<T>());
+        self.components.insert(id, ComponentsStorage::new::<T>());
     }
 
     unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
@@ -138,7 +142,7 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut EreasedComponentStorage {
+    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentsStorage {
         let id = T::id();
         match self.components.get_mut(&id) {
             Some(storage) => storage,
@@ -146,7 +150,7 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage<T:Component>(&self) -> &EreasedComponentStorage {
+    unsafe fn component_storage<T:Component>(&self) -> &ComponentsStorage {
         let id = T::id();
         match self.components.get(&id) {
             Some(storage) => storage,
@@ -154,10 +158,10 @@ impl Registry {
         }
     }
 
-    pub fn storage<T:Component>(&self) -> View<T> {
+    pub fn components<T:Component>(&self) -> Components<T> {
         let id = T::id();
         match self.components.get(&id) {
-            Some(storage) => unsafe { View::new(storage) },
+            Some(storage) => unsafe { Components::new(storage) },
             None => panic!("{} component type not registered!", type_name::<T>()),
         }
     }
