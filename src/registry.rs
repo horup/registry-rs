@@ -1,9 +1,9 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData, any::type_name};
 use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
-use slotmap::{SlotMap, basic::Keys};
+use slotmap::{SlotMap, basic::Keys, SecondaryMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query};
+use crate::{Component, EntityId, EreasedComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query, View};
 
 const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
@@ -16,7 +16,7 @@ struct SerializableRegistry {
 
 pub struct Registry {
     entities:SlotMap<EntityId, ()>,
-    components:FxHashMap<Uuid, ComponentStorage>,
+    components:FxHashMap<Uuid, EreasedComponentStorage>,
     singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
@@ -127,7 +127,7 @@ impl Registry {
         if self.components.get(&id).is_some() {
             panic!("{} component already registered!", type_name::<T>());
         }
-        self.components.insert(id, ComponentStorage::new::<T>());
+        self.components.insert(id, EreasedComponentStorage::new::<T>());
     }
 
     unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
@@ -138,7 +138,7 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
+    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut EreasedComponentStorage {
         let id = T::id();
         match self.components.get_mut(&id) {
             Some(storage) => storage,
@@ -146,10 +146,18 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage<T:Component>(&self) -> &ComponentStorage {
+    unsafe fn component_storage<T:Component>(&self) -> &EreasedComponentStorage {
         let id = T::id();
         match self.components.get(&id) {
             Some(storage) => storage,
+            None => panic!("{} component type not registered!", type_name::<T>()),
+        }
+    }
+
+    pub fn storage<T:Component>(&self) -> View<T> {
+        let id = T::id();
+        match self.components.get(&id) {
+            Some(storage) => unsafe { View::new(storage) },
             None => panic!("{} component type not registered!", type_name::<T>()),
         }
     }

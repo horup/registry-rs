@@ -11,6 +11,8 @@ pub use entity::*;
 mod query;
 pub use query::*;
 mod singleton;
+mod view;
+pub use view::*;
 pub use singleton::*;
 pub mod singleton_storage;
 pub use singleton_storage::*;
