@@ -89,12 +89,17 @@ struct BenchFacade<'a> {
 
 struct MonsterFacade<'a> {
     pub position:RefMut<'a, Position>,
-    pub monster:RefMut<'a, Monster>
+    pub monster:RefMut<'a, Monster>,
 }
 
 impl<'a> FacadeQuery<'a, BenchFacade<'a>> for MonsterFacade<'a> {
-    fn query(facade:&BenchFacade<'a>, id:EntityId) -> Option<Self> {
-        None
+    fn query(facade:&'a BenchFacade<'a>, id:EntityId) -> Option<Self> {
+        let position = facade.positions.get_mut(id)?;
+        let monster = facade.monsters.get_mut(id)?;
+        Some(Self {
+            position,
+            monster
+        })
     }
 }
 

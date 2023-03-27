@@ -14,7 +14,7 @@ pub trait Facade<'a> where Self:Sized {
 }
 
 pub trait FacadeQuery<'a, T:Facade<'a>> where Self:Sized {
-    fn query(facade:&T, id:EntityId) -> Option<Self>;
+    fn query(facade:&'a T, id:EntityId) -> Option<Self>;
 }
 
 pub struct FacadeIter<'a, T:Facade<'a>, Q:FacadeQuery<'a, T>> {
