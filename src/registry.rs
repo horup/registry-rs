@@ -1,9 +1,10 @@
 use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData, any::type_name};
+use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
+use uuid::Uuid;
 use crate::{Component, EntityId, ComponentStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query};
 
-const MAX_COMPONENTS:usize = 2_u32.pow(ComponentId::BITS) as usize;
 const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
 
 #[derive(Serialize, Deserialize)]
@@ -15,7 +16,7 @@ struct SerializableRegistry {
 
 pub struct Registry {
     entities:SlotMap<EntityId, ()>,
-    components:[Option<ComponentStorage>;MAX_COMPONENTS],
+    components:FxHashMap<Uuid, ComponentStorage>,
     singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
 }
 
@@ -60,18 +61,13 @@ impl Registry {
     pub fn new() -> Self {
         unsafe {
             let entities = SlotMap::default();
-            
-            let mut data:[MaybeUninit<Option<ComponentStorage>>;MAX_COMPONENTS] = MaybeUninit::uninit().assume_init();
-            for elem in &mut data[..] {
-                elem.write(None);
-            }
-            let components = transmute::<_, [Option<ComponentStorage>;MAX_SINGLETONS]>(data);
+            let components = FxHashMap::default();
 
             let mut data:[MaybeUninit<Option<SingletonStorage>>;MAX_SINGLETONS] = MaybeUninit::uninit().assume_init();
             for elem in &mut data[..] {
                 elem.write(None);
             }
-            let singletons = transmute::<_, [Option<SingletonStorage>;MAX_COMPONENTS]>(data);
+            let singletons = transmute::<_, [Option<SingletonStorage>;MAX_SINGLETONS]>(data);
             Self {
                 entities,
                 components,
@@ -127,11 +123,11 @@ impl Registry {
     }
 
     pub fn register_component<T:Component>(&mut self) {
-        let i = T::id() as usize;
-        if self.components[i].is_some() {
+        let id = T::id();
+        if self.components.get(&id).is_some() {
             panic!("{} component already registered!", type_name::<T>());
         }
-        self.components[i] = Some(ComponentStorage::new::<T>());
+        self.components.insert(id, ComponentStorage::new::<T>());
     }
 
     unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
@@ -143,16 +139,16 @@ impl Registry {
     }
 
     unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentStorage {
-        let i = T::id() as usize;
-        match self.components.get_unchecked_mut(i).as_mut() {
+        let id = T::id();
+        match self.components.get_mut(&id) {
             Some(storage) => storage,
             None => panic!("{} component type not registered!", type_name::<T>()),
         }
     }
 
     unsafe fn component_storage<T:Component>(&self) -> &ComponentStorage {
-        let i = T::id() as usize;
-        match self.components.get_unchecked(i).as_ref() {
+        let id = T::id();
+        match self.components.get(&id) {
             Some(storage) => storage,
             None => panic!("{} component type not registered!", type_name::<T>()),
         }
@@ -218,8 +214,8 @@ impl Registry {
 
     pub fn despawn(&mut self, id:EntityId) {
         self.entities.remove(id);
-        for storage in self.components.iter_mut() {
-            if let Some(storage) = storage {
+        for (_, storage) in self.components.iter_mut() {
+            if let storage = storage {
                 storage.remove(id);
             }
         }
@@ -227,14 +223,11 @@ impl Registry {
 
     pub fn serialize(&mut self, bytes:&mut Vec<u8>) {
         let mut serialized_components =HashMap::new();
-        for index in 0..MAX_COMPONENTS {
-            let id = index as ComponentId;
-            if let Some(Some(storage)) = self.components.get(index) {
-                let mut bytes = Vec::new();
-                unsafe {
-                    storage.serialize(&mut bytes);
-                    serialized_components.insert(id, bytes);
-                }
+        for (id, storage) in self.components.iter() {
+            let mut bytes = Vec::new();
+            unsafe {
+                storage.serialize(&mut bytes);
+                serialized_components.insert(*id, bytes);
             }
         }
         let mut serialized_singletons =HashMap::new();
@@ -262,8 +255,7 @@ impl Registry {
         let w:SerializableRegistry = bincode::deserialize(bytes).expect("failed to deserialize Registry");
         self.entities = w.entities;
         for (id, bytes) in w.serialized_components.iter() {
-            let index = *id as usize;
-            if let Some(Some(storage)) = self.components.get_mut(index) {
+            if let Some(storage) = self.components.get_mut(id) {
                 unsafe {
                     storage.deserialize(bytes);
                 }
@@ -281,10 +273,8 @@ impl Registry {
 
     pub fn clear(&mut self) {
         self.entities.clear();
-        for storage in self.components.iter_mut() {
-            if let Some(storage) = storage {
-                storage.clear();
-            }
+        for (_, storage) in self.components.iter_mut() {
+            storage.clear();
         }
         for storage in self.singletons.iter_mut() {
             if let Some(storage) = storage {

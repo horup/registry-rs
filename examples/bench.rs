@@ -2,14 +2,15 @@ use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
 use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 struct Health {
     pub amount:f32
 }
 impl Component for Health {
-    fn id() -> u8 {
-        1
+    fn id() -> Uuid {
+        uuid::uuid!("2cd4dd4a-4585-4d4f-ac58-268125bfdaff")
     }
 }
 
@@ -19,8 +20,8 @@ struct Position {
     pub y:f32
 }
 impl Component for Position {
-    fn id() -> u8 {
-        2
+    fn id() -> Uuid {
+        uuid::uuid!("896edd23-0a47-4a84-9eeb-879fe87f8f2e")
     }
 }
 
@@ -30,8 +31,8 @@ struct Player {
 }
 
 impl Component for Player {
-    fn id() -> u8 {
-        3
+    fn id() -> Uuid {
+        uuid::uuid!("09e67821-96be-4dba-89e5-6aef8842ae6d")
     }
 }
 
@@ -40,8 +41,8 @@ struct Monster {
 }
 
 impl Component for Monster {
-    fn id() -> u8 {
-        4
+    fn id() -> Uuid {
+        uuid::uuid!("243a0a9b-adb3-4dd4-a0c4-32ee5c3d5164")
     }
 }
 
