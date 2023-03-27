@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query, Facade, Components};
+use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query, Facade, Components, FacadeQuery};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
@@ -82,6 +82,7 @@ impl<'a> Query<'a> for MonsterQuery<'a> {
 }
 
 struct BenchFacade<'a> {
+    registry:&'a Registry,
     pub monsters:Components<'a, Monster>,
     pub positions:Components<'a, Position>
 }
@@ -91,12 +92,23 @@ struct MonsterFacade<'a> {
     pub monster:RefMut<'a, Monster>
 }
 
+impl<'a> FacadeQuery<'a, BenchFacade<'a>> for MonsterFacade<'a> {
+    fn query(facade:&BenchFacade<'a>, id:EntityId) -> Option<Self> {
+        None
+    }
+}
+
 impl<'a> Facade<'a> for BenchFacade<'a> {
     fn new(registry:&'a Registry) -> Self {
         Self {
+            registry,
             monsters:registry.components::<Monster>(),
             positions:registry.components::<Position>()
         }
+    }
+
+    fn registry(&self) -> &'a Registry {
+        self.registry
     }
 }
 
@@ -143,6 +155,13 @@ fn main() {
                 if let Some(mut pos) = facade.positions.get_mut(id) {
                     pos.x += 1.0;
                 }
+            }
+        });
+
+        measure("Registry: moving 1 million monsters using Facade Query", || {
+            let facade = registry.facade::<BenchFacade>();
+            for mut monster in facade.query::<MonsterFacade>() {
+                monster.position.x += 1.0;    
             }
         });
 
