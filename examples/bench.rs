@@ -87,6 +87,7 @@ struct BenchFacade<'a> {
     pub positions:Components<'a, Position>
 }
 
+#[derive(Debug)]
 struct MonsterFacade<'a> {
     pub position:RefMut<'a, Position>,
     pub monster:RefMut<'a, Monster>,
@@ -166,7 +167,7 @@ fn main() {
         measure("Registry: moving 1 million monsters using Facade Query", || {
             let facade = registry.facade::<BenchFacade>();
             for mut monster in facade.query::<MonsterFacade>() {
-                monster.position.x += 1.0;    
+                monster.position.x += 1.0;  
             }
         });
 
