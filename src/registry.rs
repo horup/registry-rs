@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys};
 use uuid::Uuid;
-use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade};
+use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, Entities};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
@@ -19,17 +19,6 @@ pub struct Registry {
     singletons:FxHashMap<Uuid, Storage>,
 }
 
-pub struct Entities<'a> {
-    keys:Keys<'a, EntityId, ()>
-}
-
-impl<'a> Iterator for Entities<'a> {
-    type Item = EntityId;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.keys.next()
-    }
-}
 
 impl Registry {
     pub fn new() -> Self {
