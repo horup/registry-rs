@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Registry, EntityId, Facade, Components, FacadeQuery};
+use registry::{Component, Registry, EntityId, Facade, Components, EntityFacade};
 use uuid::Uuid;
 
 #[derive(Default, Debug, Serialize, Clone, Deserialize)]
@@ -79,7 +79,7 @@ struct MonsterFacade<'a> {
     pub _health:RefMut<'a, Health>
 }
 
-impl<'a> FacadeQuery<'a, BenchFacade<'a>> for MonsterFacade<'a> {
+impl<'a> EntityFacade<'a, BenchFacade<'a>> for MonsterFacade<'a> {
     fn query(facade:&'a BenchFacade<'a>, id:EntityId) -> Option<Self> {
         let position = facade.positions.get_mut(id)?;
         let monster = facade.monsters.get_mut(id)?;

@@ -4,8 +4,8 @@ use crate::{Registry, EntityId, Entities};
 pub trait Facade<'a> where Self:Sized {
     fn new(registry:&'a Registry) -> Self;
     fn registry(&self) -> &'a Registry;
-    fn query<Q:FacadeQuery<'a, Self>>(&'a self) -> FacadeIter<'a, Self, Q> {
-        FacadeIter {
+    fn query<Q:EntityFacade<'a, Self>>(&'a self) -> EntityFacadeIter<'a, Self, Q> {
+        EntityFacadeIter {
             entities:self.registry().entities(),
             facade:self,
             phantom: PhantomData::default()
@@ -13,16 +13,16 @@ pub trait Facade<'a> where Self:Sized {
     }
 }
 
-pub trait FacadeQuery<'a, T:Facade<'a>> where Self:Sized {
+pub trait EntityFacade<'a, T:Facade<'a>> where Self:Sized {
     fn query(facade:&'a T, id:EntityId) -> Option<Self>;
 }
 
-pub struct FacadeIter<'a, T:Facade<'a>, Q:FacadeQuery<'a, T>> {
+pub struct EntityFacadeIter<'a, T:Facade<'a>, Q:EntityFacade<'a, T>> {
     entities:Entities<'a>,
     facade:&'a T,
     phantom:PhantomData<Q>
 }
-impl<'a, T:Facade<'a>, Q:FacadeQuery<'a, T>> Iterator for FacadeIter<'a, T, Q> {
+impl<'a, T:Facade<'a>, Q:EntityFacade<'a, T>> Iterator for EntityFacadeIter<'a, T, Q> {
     type Item = Q;
 
     #[inline(always)]
