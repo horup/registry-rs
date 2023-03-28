@@ -8,7 +8,5 @@ mod registry;
 pub use registry::*;
 mod entity;
 pub use entity::*;
-mod query;
-pub use query::*;
 mod facade;
 pub use facade::*;

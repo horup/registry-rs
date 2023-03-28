@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys, SecondaryMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Query, Components, Facade};
+use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Components, Facade};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
@@ -28,26 +28,6 @@ impl<'a> Iterator for Entities<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         return self.keys.next()
-    }
-}
-
-pub struct QueryIter<'a, T> where T:Sized + Query<'a> {
-    registry:&'a Registry,
-    keys:Keys<'a, EntityId, ()>,
-    phantom:PhantomData<T>
-}
-
-impl<'a, T> Iterator for QueryIter<'a, T> where T:Sized + Query<'a> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(id) = self.keys.next() {
-            if let Some(q) = T::query(self.registry, id) {
-                return Some(q);
-            }
-        }
-
-        None
     }
 }
 
@@ -110,15 +90,6 @@ impl Registry {
 
     pub fn entities(&self) -> Entities {
         Entities { keys: self.entities.keys() }
-    }
-
-
-    pub fn query<'a, T:Query<'a>>(&'a self) -> QueryIter<'a, T> {
-        QueryIter {
-            registry: self,
-            keys: self.entities.keys(),
-            phantom: PhantomData::default(),
-        }
     }
 
     pub fn entity(&self, id:EntityId) -> Option<Entity> {

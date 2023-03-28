@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Registry, EntityId, Query, Facade, Components, FacadeQuery, Entities};
+use registry::{Component, Registry, EntityId, Facade, Components, FacadeQuery, Entities};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
@@ -63,22 +63,6 @@ fn measure<F:FnMut()>(name:&str, mut f:F) {
     f();
     let elapsed = Instant::now() - now;
     println!("{}ms\t {}", elapsed.as_millis(), name);
-}
-
-struct MonsterQuery<'a> {
-    pub position:RefMut<'a, Position>,
-    pub monster:RefMut<'a, Monster>
-}
-
-impl<'a> Query<'a> for MonsterQuery<'a> {
-    fn query(registry:&'a Registry, id:EntityId) -> Option<Self> {
-        let position = registry.component_mut::<Position>(id)?;
-        let monster = registry.component_mut::<Monster>(id)?;
-        Some(Self {
-            position,
-            monster,
-        })
-    }
 }
 
 struct BenchFacade<'a> {
@@ -147,11 +131,6 @@ fn main() {
             for e in registry.entities() {
                 let mut pos = registry.component_mut::<Position>(e).unwrap();
                 pos.x += 1.0;
-            }
-        });
-        measure("Registry: moving 1 million monsters using MonsterQuery", || {
-            for mut monster in registry.query::<MonsterQuery>() {
-                monster.position.x += 1.0;
             }
         });
 
