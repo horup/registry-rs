@@ -1,5 +1,4 @@
 use std::cell::{RefCell, Ref, RefMut};
-use serde::{Serialize, de::DeserializeOwned};
 use slotmap::SecondaryMap;
 use crate::{EntityId, Storage, Component};
 
