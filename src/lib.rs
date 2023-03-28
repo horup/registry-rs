@@ -12,3 +12,4 @@ mod component;
 pub use component::*;
 mod entities;
 pub use entities::*;
+pub use uuid;
