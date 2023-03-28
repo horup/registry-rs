@@ -3,21 +3,20 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys, SecondaryMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Singleton, SingletonId, SingletonStorage, Query, Components, Facade};
-
-const MAX_SINGLETONS:usize = 2_u32.pow(SingletonId::BITS) as usize;
+use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Query, Components, Facade};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
     entities:SlotMap<EntityId, ()>,
     serialized_components:HashMap<ComponentId, Vec<u8>>,
-    serialized_singletons:HashMap<SingletonId, Vec<u8>>
+    serialized_singletons:HashMap<ComponentId, Vec<u8>>
 }
 
 pub struct Registry {
     entities:SlotMap<EntityId, ()>,
+    singleton:EntityId,
     components:FxHashMap<Uuid, ComponentsStorage>,
-    singletons:[Option<SingletonStorage>;MAX_SINGLETONS]
+    singletons:FxHashMap<Uuid, ComponentsStorage>,
 }
 
 pub struct Entities<'a> {
@@ -57,16 +56,13 @@ impl Registry {
         unsafe {
             let entities = SlotMap::default();
             let components = FxHashMap::default();
-
-            let mut data:[MaybeUninit<Option<SingletonStorage>>;MAX_SINGLETONS] = MaybeUninit::uninit().assume_init();
-            for elem in &mut data[..] {
-                elem.write(None);
-            }
-            let singletons = transmute::<_, [Option<SingletonStorage>;MAX_SINGLETONS]>(data);
+            let singletons = FxHashMap::default();
+            let singleton = SlotMap::<EntityId, ()>::default().insert(());
             Self {
                 entities,
                 components,
-                singletons
+                singletons,
+                singleton
             }
         }
     }
@@ -74,24 +70,41 @@ impl Registry {
     pub fn facade<'a, T:Facade<'a>>(&'a self) -> T {
         T::new(self)
     }
-    
-    pub fn register_singleton<T:Singleton>(&mut self) {
-        let i = T::id() as usize;
-        if self.singletons[i].is_some() {
+
+    pub fn register_singleton<T:Component + Default>(&mut self) {
+        let id = T::id();
+        if self.singletons.get(&id).is_some() {
             panic!("{} singleton already registered!", type_name::<T>());
         }
-        self.singletons[i] = Some(SingletonStorage::new::<T>());
-    }
-
-    pub fn singleton<T:Singleton>(&self) -> Option<Ref<T>> {
         unsafe {
-            self.singleton_storage::<T>().get::<T>()
+            let mut storage = ComponentsStorage::new::<T>();
+            let view = storage.get_mut::<T>();
+            view.insert(self.singleton, RefCell::new(T::default()));
+            self.singletons.insert(id, storage);
         }
     }
 
-    pub fn singleton_mut<T:Singleton>(&self) -> Option<RefMut<T>> {
+    pub fn singleton<T:Component>(&self) -> Option<Ref<T>> {
         unsafe {
-            self.singleton_storage::<T>().get_mut::<T>()
+            if let Some(cell) = self.singleton_storage::<T>().get::<T>().get(self.singleton) {
+                if let Ok(cell) = cell.try_borrow() {
+                    return Some(cell);
+                }
+            }
+
+            None
+        }
+    }
+
+    pub fn singleton_mut<T:Component>(&self) -> Option<RefMut<T>> {
+        unsafe {
+            if let Some(cell) = self.singleton_storage::<T>().get::<T>().get(self.singleton) {
+                if let Ok(cell) = cell.try_borrow_mut() {
+                    return Some(cell);
+                }
+            }
+
+            None
         }
     }
 
@@ -130,9 +143,9 @@ impl Registry {
         self.components.insert(id, ComponentsStorage::new::<T>());
     }
 
-    unsafe fn singleton_storage<T:Singleton>(&self) -> &SingletonStorage {
-        let i = T::id() as usize;
-        match self.singletons.get_unchecked(i).as_ref() {
+    unsafe fn singleton_storage<T:Component>(&self) -> &ComponentsStorage {
+        let id = T::id();
+        match self.singletons.get(&id) {
             Some(storage) => storage,
             None => panic!("{} singleton type not registered!", type_name::<T>()),
         }
@@ -239,16 +252,14 @@ impl Registry {
             }
         }
         let mut serialized_singletons =HashMap::new();
-        for index in 0..MAX_SINGLETONS {
-            let id = index as SingletonId;
-            if let Some(Some(storage)) = self.singletons.get(index) {
-                let mut bytes = Vec::new();
-                unsafe {
-                    storage.serialize(&mut bytes);
-                    serialized_singletons.insert(id, bytes);
-                }
+        for (id, storage) in self.singletons.iter() {
+            let mut bytes = Vec::new();
+            unsafe {
+                storage.serialize(&mut bytes);
+                serialized_singletons.insert(*id, bytes);
             }
         }
+      
         let w = SerializableRegistry {
             entities:self.entities.clone(),
             serialized_components,
@@ -270,8 +281,7 @@ impl Registry {
             }
         }
         for (id, bytes) in w.serialized_singletons.iter() {
-            let index = *id as usize;
-            if let Some(Some(storage)) = self.singletons.get_mut(index) {
+            if let Some(storage) = self.singletons.get_mut(id) {
                 unsafe {
                     storage.deserialize(bytes);
                 }
@@ -284,14 +294,12 @@ impl Registry {
         for (_, storage) in self.components.iter_mut() {
             storage.clear();
         }
-        for storage in self.singletons.iter_mut() {
-            if let Some(storage) = storage {
-                storage.clear();
-            }
+        for (_, storage) in self.singletons.iter_mut() {
+            storage.clear();
         }
     }
 
     pub fn clone(&mut self) -> Self {
-        Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone() }
+        Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone(), singleton:self.singleton }
     }
 }

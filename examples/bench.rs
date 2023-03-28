@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Singleton, SingletonId, Registry, EntityId, Query, Facade, Components, FacadeQuery, Entities};
+use registry::{Component, Registry, EntityId, Query, Facade, Components, FacadeQuery, Entities};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
@@ -51,9 +51,9 @@ struct Global {
     pub monster_count:i32
 }
 
-impl Singleton for Global {
-    fn id() -> SingletonId {
-        1
+impl Component for Global {
+    fn id() -> Uuid {
+        uuid::uuid!("243a0a9b-adb3-4dd4-a0c4-32ee5c3d5164")
     }
 }
 
