@@ -21,19 +21,14 @@ pub struct Registry {
 }
 
 pub struct Entities<'a> {
-    registry:&'a Registry,
     keys:Keys<'a, EntityId, ()>
 }
 
 impl<'a> Iterator for Entities<'a> {
-    type Item = Entity<'a>;
+    type Item = EntityId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(id) = self.keys.next() {
-            return Some(Entity::new(id, self.registry));
-        }
-
-        None
+        return self.keys.next()
     }
 }
 
@@ -101,8 +96,9 @@ impl Registry {
     }
 
     pub fn entities(&self) -> Entities {
-        Entities { registry: self, keys: self.entities.keys() }
+        Entities { keys: self.entities.keys() }
     }
+
 
     pub fn query<'a, T:Query<'a>>(&'a self) -> QueryIter<'a, T> {
         QueryIter {

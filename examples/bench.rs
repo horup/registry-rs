@@ -145,7 +145,7 @@ fn main() {
         });
         measure("Registry: moving 1 million monsters", || {
             for e in registry.entities() {
-                let mut pos = e.get_mut::<Position>().unwrap();
+                let mut pos = registry.component_mut::<Position>(e).unwrap();
                 pos.x += 1.0;
             }
         });

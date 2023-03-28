@@ -28,7 +28,7 @@ impl<'a, T:Facade<'a>, Q:FacadeQuery<'a, T>> Iterator for FacadeIter<'a, T, Q> {
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(id) = self.entities.next() {
-            if let Some(q) = Q::query(self.facade, id.id()) {
+            if let Some(q) = Q::query(self.facade, id) {
                 return Some(q);
             }
         }
