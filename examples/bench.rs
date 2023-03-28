@@ -133,26 +133,35 @@ fn main() {
             }
         });
         measure("Registry: moving 1 million monsters", || {
+            let mut hit = 0;
             for e in registry.entities() {
                 let mut pos = registry.component_mut::<Position>(e).unwrap();
                 pos.x += 1.0;
+                hit += 1;
             }
+
+            assert_eq!(hit, size);
         });
 
         measure("Registry: moving 1 million monsters using Facade", || {
             let facade = registry.facade::<BenchFacade>();
+            let mut hit = 0;
             for (id, _) in facade.monsters.iter() {
                 if let Some(mut pos) = facade.positions.get_mut(id) {
                     pos.x += 1.0;
+                    hit += 1;
                 }
             }
         });
 
         measure("Registry: moving 1 million monsters using Facade Query", || {
+            let mut hit = 0;
             let facade = registry.facade::<BenchFacade>();
             for mut monster in facade.query::<MonsterFacade>() {
                 monster.position.x += 1.0;  
+                hit += 1;
             }
+            assert_eq!(hit, size);
         });
 
         let mut bytes = Vec::new();
