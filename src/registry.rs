@@ -33,17 +33,15 @@ impl<'a> Iterator for Entities<'a> {
 
 impl Registry {
     pub fn new() -> Self {
-        unsafe {
-            let entities = SlotMap::default();
-            let components = FxHashMap::default();
-            let singletons = FxHashMap::default();
-            let singleton = SlotMap::<EntityId, ()>::default().insert(());
-            Self {
-                entities,
-                components,
-                singletons,
-                singleton
-            }
+        let entities = SlotMap::default();
+        let components = FxHashMap::default();
+        let singletons = FxHashMap::default();
+        let singleton = SlotMap::<EntityId, ()>::default().insert(());
+        Self {
+            entities,
+            components,
+            singletons,
+            singleton
         }
     }
 
@@ -207,9 +205,7 @@ impl Registry {
     pub fn despawn(&mut self, id:EntityId) {
         self.entities.remove(id);
         for (_, storage) in self.components.iter_mut() {
-            if let storage = storage {
-                storage.remove(id);
-            }
+            storage.remove(id);
         }
     }
 
