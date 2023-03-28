@@ -11,7 +11,8 @@ pub struct Storage {
     pub deserialize_fn:Box<dyn Fn(&[u8])>,
     pub remove_fn:Box<dyn Fn(EntityId)>,
     pub clear_fn:Box<dyn Fn()>,
-    pub clone_fn:Box<dyn Fn()->Self>
+    pub clone_fn:Box<dyn Fn()->Self>,
+    pub default_fn:Box<dyn Fn(EntityId)>
 }
 
 impl Storage {
@@ -56,6 +57,14 @@ impl Storage {
 
             new
         };
+        let default_fn = move |id| {
+            unsafe {
+                let storage = ptr.as_mut().unwrap();
+                if let Some(v) = storage.get_mut(id) {
+                    v.replace(T::default());
+                }
+            }
+        };
         let ptr = ptr as *mut ();
         Self {
             ptr,
@@ -64,7 +73,8 @@ impl Storage {
             deserialize_fn:Box::new(deserialize_fn),
             remove_fn:Box::new(remove_fn),
             clear_fn:Box::new(clear_fn),
-            clone_fn:Box::new(clone_fn)
+            clone_fn:Box::new(clone_fn),
+            default_fn:Box::new(default_fn)
         }      
     }
     
@@ -97,6 +107,10 @@ impl Storage {
     pub fn clear(&mut self) {
         self.clear_fn.as_mut()();
     }
+
+    pub fn default(&mut self, id:EntityId) {
+        self.default_fn.as_mut()(id);
+    } 
 }
 
 impl Drop for Storage {

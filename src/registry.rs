@@ -262,7 +262,7 @@ impl Registry {
             storage.clear();
         }
         for (_, storage) in self.singletons.iter_mut() {
-            storage.clear();
+            storage.default(self.singleton);
         }
     }
 

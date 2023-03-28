@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use registry::{Component, Registry, EntityId, Facade, Components, FacadeQuery};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
+#[derive(Default, Debug, Serialize, Clone, Deserialize)]
 struct Health {
     pub amount:f32
 }
@@ -14,7 +14,7 @@ impl Component for Health {
     }
 }
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
+#[derive(Default, Debug, Serialize, Clone, Deserialize)]
 struct Position {
     pub x:f32,
     pub y:f32
@@ -25,7 +25,7 @@ impl Component for Position {
     }
 }
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
+#[derive(Default, Debug, Serialize, Clone, Deserialize)]
 struct Player {
 
 }
@@ -36,7 +36,7 @@ impl Component for Player {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 struct Monster {
 }
 
