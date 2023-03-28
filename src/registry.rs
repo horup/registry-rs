@@ -3,20 +3,20 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap, basic::Keys, SecondaryMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, ComponentsStorage, ComponentId, EntityMut, Entity, Components, Facade};
+use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
     entities:SlotMap<EntityId, ()>,
-    serialized_components:HashMap<ComponentId, Vec<u8>>,
-    serialized_singletons:HashMap<ComponentId, Vec<u8>>
+    serialized_components:HashMap<Uuid, Vec<u8>>,
+    serialized_singletons:HashMap<Uuid, Vec<u8>>
 }
 
 pub struct Registry {
     entities:SlotMap<EntityId, ()>,
     singleton:EntityId,
-    components:FxHashMap<Uuid, ComponentsStorage>,
-    singletons:FxHashMap<Uuid, ComponentsStorage>,
+    components:FxHashMap<Uuid, Storage>,
+    singletons:FxHashMap<Uuid, Storage>,
 }
 
 pub struct Entities<'a> {
@@ -57,7 +57,7 @@ impl Registry {
             panic!("{} singleton already registered!", type_name::<T>());
         }
         unsafe {
-            let mut storage = ComponentsStorage::new::<T>();
+            let mut storage = Storage::new::<T>();
             let view = storage.get_mut::<T>();
             view.insert(self.singleton, RefCell::new(T::default()));
             self.singletons.insert(id, storage);
@@ -111,10 +111,10 @@ impl Registry {
         if self.components.get(&id).is_some() {
             panic!("{} component already registered!", type_name::<T>());
         }
-        self.components.insert(id, ComponentsStorage::new::<T>());
+        self.components.insert(id, Storage::new::<T>());
     }
 
-    unsafe fn singleton_storage<T:Component>(&self) -> &ComponentsStorage {
+    unsafe fn singleton_storage<T:Component>(&self) -> &Storage {
         let id = T::id();
         match self.singletons.get(&id) {
             Some(storage) => storage,
@@ -122,7 +122,7 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut ComponentsStorage {
+    unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut Storage {
         let id = T::id();
         match self.components.get_mut(&id) {
             Some(storage) => storage,
@@ -130,7 +130,7 @@ impl Registry {
         }
     }
 
-    unsafe fn component_storage<T:Component>(&self) -> &ComponentsStorage {
+    unsafe fn component_storage<T:Component>(&self) -> &Storage {
         let id = T::id();
         match self.components.get(&id) {
             Some(storage) => storage,

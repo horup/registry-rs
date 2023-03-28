@@ -1,19 +1,15 @@
 use std::cell::{RefCell, Ref, RefMut};
 use serde::{Serialize, de::DeserializeOwned};
 use slotmap::SecondaryMap;
-use crate::{EntityId, ComponentsStorage};
+use crate::{EntityId, Storage, Component};
 
-pub type ComponentId = uuid::Uuid;
-pub trait Component : Serialize + DeserializeOwned + 'static + Clone {
-    fn id() -> ComponentId;
-}
 
 pub struct Components<'a, T:Component> {
     storage:&'a SecondaryMap<EntityId, RefCell<T>>
 }
 
 impl<'a, T:Component> Components<'a, T> {
-    pub unsafe fn new(storage:&'a ComponentsStorage) -> Self {
+    pub unsafe fn new(storage:&'a Storage) -> Self {
         let storage = storage.get();
         Self {
             storage

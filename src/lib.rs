@@ -1,5 +1,5 @@
-mod components_storage;
-pub use components_storage::*;
+mod storage;
+pub use storage::*;
 mod components;
 pub use components::*;
 mod entity_id;
@@ -10,3 +10,5 @@ mod entity;
 pub use entity::*;
 mod facade;
 pub use facade::*;
+mod component;
+pub use component::*;
