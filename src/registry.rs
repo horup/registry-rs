@@ -1,7 +1,7 @@
-use std::{ cell::{RefCell, RefMut, Ref}, mem::{MaybeUninit, transmute}, collections::HashMap, io::BufWriter, marker::PhantomData, any::type_name};
+use std::{ cell::{RefCell, RefMut, Ref}, collections::HashMap, io::BufWriter, any::type_name};
 use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
-use slotmap::{SlotMap, basic::Keys, SecondaryMap};
+use slotmap::{SlotMap, basic::Keys};
 use uuid::Uuid;
 use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade};
 
@@ -27,7 +27,7 @@ impl<'a> Iterator for Entities<'a> {
     type Item = EntityId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        return self.keys.next()
+        self.keys.next()
     }
 }
 

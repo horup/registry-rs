@@ -22,7 +22,7 @@ impl<'a, T:Component> Components<'a, T> {
             }
         }
 
-        return None;
+        None
     }
 
     pub fn get_mut(&self, id:EntityId) -> Option<RefMut<T>> {
@@ -32,7 +32,7 @@ impl<'a, T:Component> Components<'a, T> {
             }
         }
 
-        return None;
+        None
     }
 
     pub fn iter(&self) -> Iter<'a, T> {
@@ -57,7 +57,7 @@ pub struct Iter<'a, T:Component> {
 impl<'a, T:Component> Iterator for Iter<'a, T> {
     type Item = (EntityId, Ref<'a, T>);
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((id, cell)) = self.iter.next() {
+        for (id, cell) in self.iter.by_ref() {
             if let Ok(value) = cell.try_borrow() {
                 return Some((id, value));
             }
@@ -74,7 +74,7 @@ pub struct IterMut<'a, T:Component> {
 impl<'a, T:Component> Iterator for IterMut<'a, T> {
     type Item = (EntityId, RefMut<'a, T>);
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((id, cell)) = self.iter.next() {
+        for (id, cell) in self.iter.by_ref() {
             if let Ok(value) = cell.try_borrow_mut() {
                 return Some((id, value));
             }

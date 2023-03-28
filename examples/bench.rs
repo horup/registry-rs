@@ -1,7 +1,7 @@
 use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Registry, EntityId, Facade, Components, FacadeQuery, Entities};
+use registry::{Component, Registry, EntityId, Facade, Components, FacadeQuery};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
