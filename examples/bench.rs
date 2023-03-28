@@ -1,4 +1,4 @@
-use std::{time::Instant, cell::RefMut, process::Command};
+use std::{time::Instant, cell::RefMut};
 
 use serde::{Serialize, Deserialize};
 use registry::{Component, Registry, EntityId, Facade, Components, EntityFacade, Commands};
@@ -145,11 +145,9 @@ fn main() {
 
         measure("Registry: moving 1 million monsters using Facade", || {
             let facade = registry.facade::<BenchFacade>();
-            let mut hit = 0;
             for (id, _) in facade.monsters.iter() {
                 if let Some(mut pos) = facade.positions.get_mut(id) {
                     pos.x += 1.0;
-                    hit += 1;
                 }
             }
         });
