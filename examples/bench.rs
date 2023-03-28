@@ -157,7 +157,10 @@ fn main() {
         });
 
         measure("Registry: clearing all entities, components and resources", || {
+            let before = registry.singleton::<Global>().unwrap().monster_count;
             registry.clear();
+            let after = registry.singleton::<Global>().unwrap().monster_count;
+            assert_ne!(before, after);
         });
 
         measure("Registry: de-serialize 1 million monsters", || {
