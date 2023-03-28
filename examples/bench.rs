@@ -68,22 +68,26 @@ fn measure<F:FnMut()>(name:&str, mut f:F) {
 struct BenchFacade<'a> {
     registry:&'a Registry,
     pub monsters:Components<'a, Monster>,
-    pub positions:Components<'a, Position>
+    pub positions:Components<'a, Position>,
+    pub healths:Components<'a, Health>
 }
 
 #[derive(Debug)]
 struct MonsterFacade<'a> {
     pub position:RefMut<'a, Position>,
-    pub monster:RefMut<'a, Monster>,
+    pub _monster:RefMut<'a, Monster>,
+    pub _health:RefMut<'a, Health>
 }
 
 impl<'a> FacadeQuery<'a, BenchFacade<'a>> for MonsterFacade<'a> {
     fn query(facade:&'a BenchFacade<'a>, id:EntityId) -> Option<Self> {
         let position = facade.positions.get_mut(id)?;
         let monster = facade.monsters.get_mut(id)?;
+        let health = facade.healths.get_mut(id)?;
         Some(Self {
             position,
-            monster
+            _monster: monster,
+            _health: health
         })
     }
 }
@@ -93,7 +97,8 @@ impl<'a> Facade<'a> for BenchFacade<'a> {
         Self {
             registry,
             monsters:registry.components::<Monster>(),
-            positions:registry.components::<Position>()
+            positions:registry.components::<Position>(),
+            healths:registry.components::<Health>()
         }
     }
 

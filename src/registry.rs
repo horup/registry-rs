@@ -1,7 +1,7 @@
 use std::{ cell::{RefCell, RefMut, Ref}, collections::HashMap, io::BufWriter, any::type_name};
 use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
-use slotmap::{SlotMap, basic::Keys};
+use slotmap::{SlotMap};
 use uuid::Uuid;
 use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, Entities};
 
