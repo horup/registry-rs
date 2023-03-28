@@ -17,12 +17,14 @@ impl<'a> EntityMut<'a> {
         self.id
     }
 
-    pub fn attach<T:Component>(&mut self, component:T) {
+    pub fn attach<T:Component>(&mut self, component:T) -> &mut Self {
         self.registry.component_attach(self.id, component);
+        self
     }
 
-    pub fn detach<T:Component>(&mut self) {
+    pub fn detach<T:Component>(&mut self) -> &mut Self {
         self.registry.component_detach::<T>(self.id);
+        self
     }
 
     pub fn get<T:Component>(&self) -> Option<Ref<T>> {

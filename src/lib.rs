@@ -11,5 +11,7 @@ pub use facade::*;
 mod component;
 pub use component::*;
 mod entities;
+mod commands;
+pub use commands::*;
 pub use entities::*;
 pub use uuid;

@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, Entities};
+use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, EntityIter};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
@@ -75,8 +75,12 @@ impl Registry {
         }
     }
 
-    pub fn entities(&self) -> Entities {
-        Entities { keys: self.entities.keys() }
+    pub fn iter(&self) -> EntityIter {
+        EntityIter { keys: self.entities.keys() }
+    }
+
+    pub fn len(&self) -> usize {
+        self.entities.len()
     }
 
     pub fn entity(&self, id:EntityId) -> Option<Entity> {

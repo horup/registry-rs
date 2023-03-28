@@ -5,11 +5,11 @@ new_key_type! {
     pub struct EntityId;
 }
 
-pub struct Entities<'a> {
+pub struct EntityIter<'a> {
     pub(crate) keys:Keys<'a, EntityId, ()>
 }
 
-impl<'a> Iterator for Entities<'a> {
+impl<'a> Iterator for EntityIter<'a> {
     type Item = EntityId;
 
     fn next(&mut self) -> Option<Self::Item> {

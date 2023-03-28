@@ -1,7 +1,7 @@
-use std::{time::Instant, cell::RefMut};
+use std::{time::Instant, cell::RefMut, process::Command};
 
 use serde::{Serialize, Deserialize};
-use registry::{Component, Registry, EntityId, Facade, Components, EntityFacade};
+use registry::{Component, Registry, EntityId, Facade, Components, EntityFacade, Commands};
 use uuid::Uuid;
 
 #[derive(Default, Debug, Serialize, Clone, Deserialize)]
@@ -134,7 +134,7 @@ fn main() {
         });
         measure("Registry: moving 1 million monsters", || {
             let mut hit = 0;
-            for e in registry.entities() {
+            for e in registry.iter() {
                 let mut pos = registry.component_mut::<Position>(e).unwrap();
                 pos.x += 1.0;
                 hit += 1;
@@ -190,5 +190,31 @@ fn main() {
             let _e = registry.entity(id).unwrap();
             let _ = registry.clone();
         });
+
+        registry.clear();
+
+        measure("Spawning monsters using Commands", || {
+            assert_eq!(registry.len(), 0);
+            let mut commands = Commands::default();
+            for i in 0..size {
+                let x = i as f32;
+                commands.push(move |reg|{
+                    reg.spawn()
+                    .attach(Monster {
+
+                    })
+                    .attach(Position {
+                        x: x,
+                        y: 0.0,
+                    })
+                    .attach(Health {
+                        amount:100.0
+                    });
+                });
+            }
+            commands.execute(&mut registry);
+
+            assert_eq!(registry.len(), size);
+        })
     }
 }
