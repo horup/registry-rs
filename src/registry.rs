@@ -52,7 +52,7 @@ impl Registry {
     }
 
     pub fn register_singleton<T:Component + Default>(&mut self) {
-        let id = T::id();
+        let id = T::type_id();
         if self.singletons.get(&id).is_some() {
             panic!("{} singleton already registered!", type_name::<T>());
         }
@@ -107,7 +107,7 @@ impl Registry {
     }
 
     pub fn register_component<T:Component>(&mut self) {
-        let id = T::id();
+        let id = T::type_id();
         if self.components.get(&id).is_some() {
             panic!("{} component already registered!", type_name::<T>());
         }
@@ -115,7 +115,7 @@ impl Registry {
     }
 
     unsafe fn singleton_storage<T:Component>(&self) -> &Storage {
-        let id = T::id();
+        let id = T::type_id();
         match self.singletons.get(&id) {
             Some(storage) => storage,
             None => panic!("{} singleton type not registered!", type_name::<T>()),
@@ -123,7 +123,7 @@ impl Registry {
     }
 
     unsafe fn component_storage_mut<T:Component>(&mut self) -> &mut Storage {
-        let id = T::id();
+        let id = T::type_id();
         match self.components.get_mut(&id) {
             Some(storage) => storage,
             None => panic!("{} component type not registered!", type_name::<T>()),
@@ -131,7 +131,7 @@ impl Registry {
     }
 
     unsafe fn component_storage<T:Component>(&self) -> &Storage {
-        let id = T::id();
+        let id = T::type_id();
         match self.components.get(&id) {
             Some(storage) => storage,
             None => panic!("{} component type not registered!", type_name::<T>()),
@@ -139,7 +139,7 @@ impl Registry {
     }
 
     pub fn components<T:Component>(&self) -> Components<T> {
-        let id = T::id();
+        let id = T::type_id();
         match self.components.get(&id) {
             Some(storage) => unsafe { Components::new(storage) },
             None => panic!("{} component type not registered!", type_name::<T>()),
