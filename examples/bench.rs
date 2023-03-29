@@ -79,8 +79,9 @@ struct MonsterFacade<'a> {
     pub _health:RefMut<'a, Health>
 }
 
-impl<'a> EntityFacade<'a, BenchFacade<'a>> for MonsterFacade<'a> {
-    fn query(facade:&'a BenchFacade<'a>, id:EntityId) -> Option<Self> {
+impl<'a> EntityFacade<'a> for MonsterFacade<'a> {
+    type Facade = BenchFacade<'a>;
+    fn query(facade:&'a Self::Facade, id:EntityId) -> Option<Self> {
         let position = facade.positions.get_mut(id)?;
         let monster = facade.monsters.get_mut(id)?;
         let health = facade.healths.get_mut(id)?;
@@ -156,6 +157,15 @@ fn main() {
             let mut hit = 0;
             let facade = registry.facade::<BenchFacade>();
             for mut monster in facade.query::<MonsterFacade>() {
+                monster.position.x += 1.0;  
+                hit += 1;
+            }
+            assert_eq!(hit, size);
+        });
+
+        measure("Registry: moving 1 million monsters using Query", || {
+            let mut hit = 0;
+            for mut monster in registry.query::<MonsterFacade>() {
                 monster.position.x += 1.0;  
                 hit += 1;
             }

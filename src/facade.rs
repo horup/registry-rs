@@ -4,31 +4,30 @@ use crate::{Registry, EntityId, EntityIter};
 pub trait Facade<'a> where Self:Sized {
     fn new(registry:&'a Registry) -> Self;
     fn registry(&self) -> &'a Registry;
-    fn query<Q:EntityFacade<'a, Self>>(&'a self) -> EntityFacadeIter<'a, Self, Q> {
+    fn query<EF:EntityFacade<'a, Facade = Self>>(&'a self) -> EntityFacadeIter<'a, EF> {
         EntityFacadeIter {
             entities:self.registry().iter(),
             facade:self,
-            phantom: PhantomData::default()
         }
     }
 }
 
-pub trait EntityFacade<'a, T:Facade<'a>> where Self:Sized {
-    fn query(facade:&'a T, id:EntityId) -> Option<Self>;
+pub trait EntityFacade<'a> where Self:Sized  {
+    type Facade : Facade<'a>;
+    fn query(facade:&'a Self::Facade, id:EntityId) -> Option<Self>;
 }
 
-pub struct EntityFacadeIter<'a, T:Facade<'a>, Q:EntityFacade<'a, T>> {
+pub struct EntityFacadeIter<'a, EF:EntityFacade<'a>> {
     entities:EntityIter<'a>,
-    facade:&'a T,
-    phantom:PhantomData<Q>
+    facade:&'a EF::Facade
 }
-impl<'a, T:Facade<'a>, Q:EntityFacade<'a, T>> Iterator for EntityFacadeIter<'a, T, Q> {
-    type Item = Q;
+impl<'a, EF:EntityFacade<'a>> Iterator for EntityFacadeIter<'a, EF> {
+    type Item = EF;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         for id in self.entities.by_ref() {
-            if let Some(q) = Q::query(self.facade, id) {
+            if let Some(q) = EF::query(&self.facade, id) {
                 return Some(q);
             }
         }
