@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, EntityIter, EntityFacade, EntityFacadeIter};
+use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, EntityIter};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
