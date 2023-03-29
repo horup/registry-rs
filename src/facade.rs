@@ -1,4 +1,3 @@
-
 use crate::{Registry, EntityId, EntityIter};
 
 pub trait Facade<'a> where Self:Sized {
