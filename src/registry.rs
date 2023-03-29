@@ -19,31 +19,6 @@ pub struct Registry {
     singletons:FxHashMap<Uuid, Storage>,
 }
 
-
-pub struct QueryIter<'a, EF:EntityFacade<'a>> {
-    facade:EF::Facade,
-    iter:EntityFacadeIter<'a, EF>
-} 
-
-impl<'a, EF:EntityFacade<'a>> QueryIter<'a, EF> {
-    pub fn new(registry:&'a Registry) -> Self {
-        let facade = EF::Facade::new(registry);
-        let iter = facade.query::<EF>();
-        Self {
-            facade,
-            iter
-        }
-    }
-}
-
-impl<'a, EF:EntityFacade<'a>> Iterator for QueryIter<'a, EF> {
-    type Item = EF;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
-
 impl Registry {
     pub fn new() -> Self {
         let entities = SlotMap::default();
@@ -61,20 +36,6 @@ impl Registry {
     pub fn facade<'a, T:Facade<'a>>(&'a self) -> T {
         T::new(self)
     }
-
-    pub fn query<'a, EF:EntityFacade<'a>>(&'a self) -> QueryIter<'a, EF> {
-        QueryIter::new(self)
-    }
-
-    /*pub fn query<'a, EF:EntityFacade<'a, F>, F:Facade<'a>>(&self) -> QueryIter<'a, EF, F> {
-        todo!();
-        let facade = F::new(self);
-        let efi = EntityFacadeIter {
-            entities: self.iter(),
-            facade: facade,
-            phantom: std::marker::PhantomData,
-        };
-    }*/
 
     pub fn register_singleton<T:Component + Default>(&mut self) {
         let id = T::type_id();

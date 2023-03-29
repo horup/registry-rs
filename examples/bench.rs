@@ -163,15 +163,6 @@ fn main() {
             assert_eq!(hit, size);
         });
 
-        measure("Registry: moving 1 million monsters using Query", || {
-            let mut hit = 0;
-            for mut monster in registry.query::<MonsterFacade>() {
-                monster.position.x += 1.0;  
-                hit += 1;
-            }
-            assert_eq!(hit, size);
-        });
-
         let mut bytes = Vec::new();
 
         measure("Registry: serialize 1 million monsters", || {
