@@ -35,8 +35,8 @@ impl Registry {
         }
     }
 
-    pub fn push(&self) {
-
+    pub fn push<F:Fn(&mut Self)->() + 'static>(&self, f:F) {
+        self.commands.borrow_mut().push(Box::new(f));
     }
 
     pub fn execute(&mut self) {
