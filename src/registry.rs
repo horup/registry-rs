@@ -1,9 +1,9 @@
-use std::{ cell::{RefCell, RefMut, Ref}, collections::HashMap, io::BufWriter, any::type_name};
+use std::{ cell::{RefCell, RefMut, Ref}, collections::HashMap, io::BufWriter, any::type_name, mem::replace};
 use fxhash::FxHashMap;
 use serde::{Serialize, Deserialize};
 use slotmap::{SlotMap};
 use uuid::Uuid;
-use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, EntityIter};
+use crate::{Component, EntityId, Storage, EntityMut, Entity, Components, Facade, EntityIter, Commands};
 
 #[derive(Serialize, Deserialize)]
 struct SerializableRegistry {
@@ -13,6 +13,7 @@ struct SerializableRegistry {
 }
 
 pub struct Registry {
+    commands:RefCell<Commands>,
     entities:SlotMap<EntityId, ()>,
     singleton:EntityId,
     components:FxHashMap<Uuid, Storage>,
@@ -29,8 +30,18 @@ impl Registry {
             entities,
             components,
             singletons,
-            singleton
+            singleton,
+            commands:RefCell::new(Commands::default())
         }
+    }
+
+    pub fn push(&self) {
+
+    }
+
+    pub fn execute(&mut self) {
+        let commands = replace(&mut self.commands, RefCell::new(Commands::default()));
+        commands.borrow_mut().execute(self);
     }
 
     pub fn facade<'a, T:Facade<'a>>(&'a self) -> T {
@@ -259,6 +270,6 @@ impl Registry {
     }
 
     pub fn clone(&mut self) -> Self {
-        Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone(), singleton:self.singleton }
+        Self { entities: self.entities.clone(), components: self.components.clone(), singletons: self.singletons.clone(), singleton:self.singleton, commands:RefCell::new(Commands::default()) }
     }
 }
